@@ -12,6 +12,8 @@ const zoom = ref(initZoom);
 const rotation = ref(initRotation);
 const resolution = ref(0);
 
+const groupByStatus = ref(true);
+
 interface TrainTimes {
   station: string;
   code: string;
@@ -42,6 +44,11 @@ interface TrainInfo {
   direction?: number;
   poll?: string;
   pollMin?: number;
+  number?: string;
+  status?: 'arr' | 'dep' | 'sch';
+}
+interface TrainInfoObject {
+  [index: string]: TrainInfo;
 }
 
 function resolutionChanged(event: BaseEvent) {
@@ -55,20 +62,29 @@ function rotationChanged(event: BaseEvent) {
   rotation.value = event.target.getRotation();
 }
 
-const trainData = ref<TrainInfo[]>();
+const trainData = ref<TrainInfoObject>();
 
 const refreshData = async () => {
   const response = await fetch('/trains');
   if (response.ok) trainData.value = await response.json();
 };
 
-const sortData = async (field: 'departed' | 'from' | 'arrived' | 'to') => {
-  trainData.value = trainData.value?.sort((a,b) => a[field] > b[field] ? 1 : (a[field] === b[field] ? 0 : -1));
-};
-
-const activeTrains = computed(() => {
-  let atrains = trainData.value;
-  return atrains?.filter(train => train.departed && !train.arrived);
+const trainArray = computed(() => {
+  let arrived: TrainInfo[] = [];
+  let departed: TrainInfo[] = [];
+  let scheduled: TrainInfo[] = [];
+  for (const tnum in trainData.value) {
+    if (trainData.value[tnum].departed) {
+      if (trainData.value[tnum].arrived) {
+        arrived.push({number: tnum, status: 'arr', ...trainData.value[tnum]});
+      } else {
+        departed.push({number: tnum, status: 'dep', ...trainData.value[tnum]});
+      }
+    } else {
+      scheduled.push({number: tnum, status: 'sch', ...trainData.value[tnum]});
+    }
+  }
+  return groupByStatus.value ? [departed, scheduled, arrived] : [[...departed, ...scheduled, ...arrived]];
 });
 
 onMounted(async () => {
@@ -84,7 +100,7 @@ onMounted(async () => {
       v-if="initialized"
       :loadTilesWhileAnimating="true"
       :loadTilesWhileInteracting="true"
-      style="height: 480px;"
+      style="height: 280px; width: 280px;"
     >
       <ol-view
         ref="view"
@@ -100,30 +116,28 @@ onMounted(async () => {
       <ol-tile-layer>
         <ol-source-osm />
       </ol-tile-layer>
-      <!-- <ol-overlay
-        v-if="trainData"
-        v-for="(activeTrain, aIdx) in activeTrains"
-        :position="`[${activeTrain.lng}, ${activeTrain.lat}]`"
-        :key="aIdx"
+      <ol-overlay
+        v-for="activeTrain in trainArray[0]"
+        :position="`[${activeTrain.lng ?? 0}, ${activeTrain.lat ?? 0}]`"
+        :key="activeTrain.number"
       >
         <div>CHOOCHOO</div>
-      </ol-overlay> -->
+      </ol-overlay>
     </ol-map>
+    <input type="checkbox" v-model="groupByStatus">
     <table>
       <thead>
         <th>Train #</th>
         <th>From</th>
         <th>To</th>
-        <th>Departed</th>
-        <th>Arrived</th>
+        <th>Status</th>
       </thead>
-      <tbody>
-        <tr v-for="(train, idx) in trainData">
-          <td>{{ idx }}</td>
+      <tbody v-for="trainSet in trainArray">
+        <tr v-for="train in trainSet">
+          <td>{{ train.number }}</td>
           <td>{{ train.from }}</td>
           <td>{{ train.to }}</td>
-          <td>{{ train.departed ? '✅' : '❎' }}</td>
-          <td @click="sortData('arrived')">{{ train.arrived ? '✅' : '❎' }}</td>
+          <td>{{ train.status }}</td>
         </tr>
       </tbody>
     </table>
