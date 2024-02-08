@@ -17,7 +17,7 @@ I solved my immediate problem with a bit of `curl` piped to `jq`, but it got me 
   - I am able to leverage CF's cache, reducing the load on the VIA API. (They use AWS Cloudfront for cache, ... )
   - KV or D1 may also be useful if I decide to expand the app by making the internal API more granular
 - Vue.js
-- OpenLayers Map (via `vue3-openlayers`)
+- Leaflet (with OpenStreetMaps map tiles)
 
 ## License
 
