@@ -2,6 +2,7 @@ export const onRequestGet: PagesFunction = async (context) => {
   const VIA_URL = `https://tsimobile.viarail.ca/data/allData.json`;
 
   let request = new Request(VIA_URL, context.request);
+  console.log(request.cf.latitude, request.cf.longitude);
   request.headers.set("Origin", new URL(VIA_URL).origin);
 
   const cacheKey = new Request(VIA_URL, request);
@@ -10,7 +11,6 @@ export const onRequestGet: PagesFunction = async (context) => {
   let response = await cache.match(cacheKey);
 
   if (!response) {
-    console.log(`Cache miss.`);
     response = await fetch(request);
 
     response = new Response(response.body, response);
@@ -19,8 +19,7 @@ export const onRequestGet: PagesFunction = async (context) => {
     response.headers.append("Cache-Control", "s-maxage=30");
 
     context.waitUntil(cache.put(cacheKey, response.clone()));
-  } else {
-    console.log(`Cache hit.`);
   }
+  
   return response;
 };
