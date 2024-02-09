@@ -3,22 +3,37 @@ import { onMounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import type { TrainInfoObject } from '@/util/types';
 
-const props = defineProps<{
+interface Props {
   trainData: TrainInfoObject;
   trainMap: Record<string, [number, number]>;
-  trainSelected: string | undefined;
   mapBounds: [[number, number], [number, number]];
   mapCoords: [number, number];
-  autoUpdate?: boolean;
-}>();
+  options?: {
+    autoRefresh?: boolean,
+    mapTiles?: boolean,
+    railTiles?: boolean,
+  };
+}
 
-const emits = defineEmits<{
-  selectTrain: [train: string];
-}>();
+const trainSelected = defineModel<string>();
+
+const props = withDefaults(defineProps<Props>(), {
+  options: () => ({
+    autoRefresh: true,
+    mapTiles: true,
+    railTiles: true,
+  })
+});
+
+// const emits = defineEmits<{
+//   selectTrain: [train: string];
+// }>();
 
 const zoom = ref(10);
 const mapElem = ref<HTMLElement>();
 const leafMap = ref<L.Map>();
+// const leafMapTiles = ref<L.TileLayer>();
+// const leafRailTiles = ref<L.TileLayer>();
 const markers = ref<Record<string, L.Marker>>({});
 
 const updateMarker = (trainNumber: string, coords: [number, number]) => {
@@ -29,7 +44,7 @@ const updateMarker = (trainNumber: string, coords: [number, number]) => {
       markers.value[trainNumber] = L.marker(coords)
       .addTo(leafMap.value)
       .bindPopup(`<b>${trainNumber}</b><br>Speed: ${props.trainData[trainNumber].speed}km/h<br>Dir: ${props.trainData[trainNumber].direction}`)
-      .on('click', () => emits('selectTrain', trainNumber));
+      .on('click', () => trainSelected.value = trainNumber);
     }
   }
 };
@@ -45,36 +60,49 @@ watch(props, (newProps, oldProps) => {
     if (!(trainId in newProps.trainMap)) delete markers.value[trainId];
   }
 
-  // update map view
-  if (!newProps.autoUpdate && leafMap.value) {
-    if (newProps.trainSelected) {
-      markers.value[newProps.trainSelected].openPopup();
-      if (
-        leafMap.value.getBounds().contains(newProps.mapCoords) &&
-        leafMap.value.getZoom() >= zoom.value
-      ) {
-        leafMap.value.panTo(newProps.mapCoords);
+  // update map
+  if (leafMap.value) {
+    // update view
+    if (newProps.options.autoRefresh) {
+      if (trainSelected.value) {
+        markers.value[trainSelected.value].openPopup();
+        if (
+          leafMap.value.getBounds().contains(newProps.mapCoords) &&
+          leafMap.value.getZoom() >= zoom.value
+        ) {
+          leafMap.value.panTo(newProps.mapCoords);
+        } else {
+          leafMap.value.flyTo(newProps.mapCoords, zoom.value);
+        }
       } else {
-        leafMap.value.flyTo(newProps.mapCoords, zoom.value);
+        leafMap.value.flyToBounds(newProps.mapBounds);
       }
-    } else {
-      leafMap.value.flyToBounds(newProps.mapBounds);
     }
   }
 });
 
 onMounted(() => {
   if (props.trainMap && mapElem.value) {
-    leafMap.value = L.map(mapElem.value);
-    if (props.trainSelected) {
+    const leafMapTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+    });
+
+    const leafRailTiles = L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      minZoom: 12,
+      attribution: 'Data <a href="https://www.openstreetmap.org/copyright">&copy; OpenStreetMap contributors</a>, Style: <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA 2.0</a> <a href="http://www.openrailwaymap.org/">OpenRailwayMap</a> and OpenStreetMap'
+    });
+    
+    leafMap.value = L.map(mapElem.value, {
+      closePopupOnClick: false,
+      layers: [leafMapTiles, leafRailTiles],
+    });
+
+    if (trainSelected.value) {
       leafMap.value.setView(props.mapCoords, zoom.value);
     } else {
-      leafMap.value.fitBounds(L.latLngBounds(props.mapBounds).pad(0.1))
+      leafMap.value.fitBounds(L.latLngBounds(props.mapBounds));
     }
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(leafMap.value);
 
     for (const train in props.trainMap) {
       updateMarker(train, props.trainMap[train]);
@@ -88,6 +116,8 @@ onMounted(() => {
 
 <style>
 #mapElem {
+  position: sticky;
+  top: 0;
   height: 50vh;
 }
 </style>

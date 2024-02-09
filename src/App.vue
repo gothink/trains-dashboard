@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue';
 import type { TrainInfoObject, TrainInfo } from '@/util/types';
 import TrainMap from './components/TrainMap.vue';
+import TrainTable from './components/TrainTable.vue';
 
 const groupByStatus = ref(true);
 const initialized = ref(false);
@@ -62,24 +63,15 @@ watch(trainData, (newData) => {
 
 }, { immediate: true });
 
-const getNextStop = (trainNumber: string) => {
-  let stopIndex = trainData.value[trainNumber].times.findIndex((station) => station.eta !== 'ARR');
-  if (stopIndex > -1) {
-    let nextStation = trainData.value[trainNumber].times[stopIndex];
-    return `${nextStation.station} (${nextStation.eta})`;
-  }
-};
-
-const selectTrain = (trainNumber: string) => {
-  if (trainNumber) {
-    let tCoords = getTrainCoords(trainNumber);
+watch(trainSelected, (newTrain) => {
+  if (newTrain !== '') {
+    let tCoords = getTrainCoords(newTrain);
     if (tCoords) {
       mapCoords.value = [tCoords[0], tCoords[1]];
     }
-  } 
-  trainSelected.value = trainNumber;
+  }
   window.scrollTo(0, 0);
-};
+});
 
 onMounted(async () => {
   await refreshData();
@@ -91,66 +83,17 @@ onMounted(async () => {
 <template>
   <main v-if="initialized">
     <TrainMap
+      v-model="trainSelected"
       :train-data="trainData"
       :train-map="trainMapIds"
-      :train-selected="trainSelected"
       :map-coords="mapCoords"
       :map-bounds="mapBounds"
-      @select-train="selectTrain"
     />
-    <table>
-      <thead>
-        <tr>VIA Rail Trains</tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th>In Transit</th>
-        </tr>
-        <tr>
-          <th>Train #</th>
-          <th>From</th>
-          <th>Next Stop</th>
-          <th>Destination</th>
-          <th>Delay</th>
-        </tr>
-        <tr v-for="train in trainGroups['dep']" @click="selectTrain(train)">
-          <td>{{ train }}</td>
-          <td>{{ trainData[train].from }}</td>
-          <td>{{ getNextStop(train) }}</td>
-          <td>{{ trainData[train].to }}</td>
-          <td>{{ trainData[train].pollMin }}</td>
-        </tr>
-      </tbody>
-      <tbody>
-        <tr>
-          <th>Scheduled to Depart</th>
-        </tr>
-        <tr>
-          <th>Train #</th>
-          <th>From</th>
-          <th>Destination</th>
-        </tr>
-        <tr v-for="train in trainGroups['sch']" @click="selectTrain(train)">
-          <td>{{ train }}</td>
-          <td>{{ trainData[train].from }}</td>
-          <td>{{ trainData[train].to }}</td>
-        </tr>
-      </tbody>
-      <tbody>
-        <tr>
-          <th>Arrived</th>
-        </tr>
-        <tr>
-          <th>Train #</th>
-          <th>From</th>
-          <th>Destination</th>
-        </tr>
-        <tr v-for="train in trainGroups['arr']" @click="selectTrain(train)">
-          <td>{{ train }}</td>
-          <td>{{ trainData[train].from }}</td>
-          <td>{{ trainData[train].to }}</td>
-        </tr>
-      </tbody>
-    </table>
+
+    <TrainTable
+      v-model="trainSelected"
+      :train-data="trainData"
+      :train-groups="trainGroups"
+    />
   </main>
 </template>
