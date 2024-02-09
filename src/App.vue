@@ -71,13 +71,14 @@ const getNextStop = (trainNumber: string) => {
 };
 
 const selectTrain = (trainNumber: string) => {
-  if (trainSelected.value) {
+  if (trainNumber) {
     let tCoords = getTrainCoords(trainNumber);
     if (tCoords) {
       mapCoords.value = [tCoords[0], tCoords[1]];
     }
   } 
   trainSelected.value = trainNumber;
+  window.scrollTo(0, 0);
 };
 
 onMounted(async () => {

@@ -28,7 +28,7 @@ const updateMarker = (trainNumber: string, coords: [number, number]) => {
     } else {
       markers.value[trainNumber] = L.marker(coords)
       .addTo(leafMap.value)
-      .bindPopup(trainNumber)
+      .bindPopup(`<b>${trainNumber}</b><br>Speed: ${props.trainData[trainNumber].speed}km/h<br>Dir: ${props.trainData[trainNumber].direction}`)
       .on('click', () => emits('selectTrain', trainNumber));
     }
   }
@@ -48,6 +48,7 @@ watch(props, (newProps, oldProps) => {
   // update map view
   if (!newProps.autoUpdate && leafMap.value) {
     if (newProps.trainSelected) {
+      markers.value[newProps.trainSelected].openPopup();
       if (
         leafMap.value.getBounds().contains(newProps.mapCoords) &&
         leafMap.value.getZoom() >= zoom.value
@@ -87,6 +88,6 @@ onMounted(() => {
 
 <style>
 #mapElem {
-  height: 500px;
+  height: 50vh;
 }
 </style>
