@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-import type { TrainInfoObject, TrainInfo } from '@/util/types';
+import type { TrainInfoObject, TrainInfo, TrainStatus } from '@/util/types';
 import TrainMap from './components/TrainMap.vue';
 import TrainTable from './components/TrainTable.vue';
+import TrainView from '@/components/TrainView.vue';
 
-const groupByStatus = ref(true);
 const initialized = ref(false);
+const trainStatus = ref<TrainStatus>('dep');
 const trainData = ref<TrainInfoObject>({});
+const filteredTrains = ref<string[]>([]);
 
-const trainGroups = ref<Record<string, string[]>>({
+const trainGroups = ref<Record<TrainStatus, string[]>>({
   arr: [],
   dep: [],
   sch: [],
@@ -63,15 +65,16 @@ watch(trainData, (newData) => {
 
 }, { immediate: true });
 
-watch(trainSelected, (newTrain) => {
-  if (newTrain !== '') {
-    let tCoords = getTrainCoords(newTrain);
+const selectTrain = (trainId: string, inTransit: boolean = true) => {
+  if (trainId !== '' && inTransit) {
+    let tCoords = getTrainCoords(trainId);
     if (tCoords) {
       mapCoords.value = [tCoords[0], tCoords[1]];
     }
   }
   window.scrollTo(0, 0);
-});
+  trainSelected.value = trainId;
+};
 
 onMounted(async () => {
   await refreshData();
@@ -81,19 +84,39 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main v-if="initialized">
+  <main v-if="initialized" class="h-dvh">
     <TrainMap
-      v-model="trainSelected"
+      class="sticky top-0"
       :train-data="trainData"
       :train-map="trainMapIds"
+      :train-selected="trainSelected"
       :map-coords="mapCoords"
       :map-bounds="mapBounds"
+      @select-train="selectTrain"
+      @filter-trains="(filtered) => filteredTrains = filtered"
     />
+    <div v-if="trainSelected === ''">
+      <select v-model="trainStatus">
+        <option value="dep">In Transit</option>
+        <option value="sch">Scheduled</option>
+        <option value="arr">Arrived</option>
+      </select>
 
-    <TrainTable
-      v-model="trainSelected"
-      :train-data="trainData"
-      :train-groups="trainGroups"
-    />
+      <TrainTable
+        :train-data="trainData"
+        :train-groups="trainGroups"
+        :train-status="trainStatus"
+        :train-selected="trainSelected"
+        :filtered-trains="filteredTrains"
+        @select-train="selectTrain"
+      />
+    </div>
+    <div v-else>
+      <button @click="trainSelected=''">Back to trains</button>
+      <TrainView
+        :train-selected="trainSelected"
+        :train-times="trainData[trainSelected].times"
+      />
+    </div>
   </main>
 </template>

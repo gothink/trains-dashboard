@@ -34,3 +34,5 @@ export interface TrainInfo {
 export interface TrainInfoObject {
   [index: string]: TrainInfo;
 }
+
+export type TrainStatus = 'arr' | 'dep' | 'sch';
