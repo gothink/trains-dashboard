@@ -123,5 +123,5 @@ onMounted(() => {
 });
 </script>
 <template>
-  <div id="mapElem" ref="mapElem" class="h-1/2"></div>
+  <div id="mapElem" ref="mapElem" class="h-full"></div>
 </template>

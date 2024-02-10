@@ -85,21 +85,24 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main v-if="initialized" class="h-dvh">
-    <TrainMap
-      v-show="showMap"
-      class="sticky top-0"
-      :train-data="trainData"
-      :train-map="trainMapIds"
-      :train-selected="trainSelected"
-      :map-coords="mapCoords"
-      :map-bounds="mapBounds"
-      @select-train="selectTrain"
-      @filter-trains="(filtered) => filteredTrains = filtered"
-    />
-    <button @click="showMap = !showMap">{{ showMap ? 'Hide' : 'Show' }} Map</button>
+  <main v-if="initialized" class="h-max">
+    <div class="sticky top-0 h-[50vh]">
+      <TrainMap
+        v-show="showMap"
+        :train-data="trainData"
+        :train-map="trainMapIds"
+        :train-selected="trainSelected"
+        :map-coords="mapCoords"
+        :map-bounds="mapBounds"
+        @select-train="selectTrain"
+        @filter-trains="(filtered) => filteredTrains = filtered"
+      />
+      <button class="my-1 mx-auto px-2 rounded-sm bg-teal-200 dark:bg-teal-900 text-slate-600 dark:text-slate-300" @click="showMap = !showMap">
+        {{ showMap ? 'Hide' : 'Show' }} Map
+      </button>
+    </div>
     <div v-if="trainSelected === ''">
-      <select v-model="trainStatus">
+      <select v-model="trainStatus" class=" my-2 mx-auto p-2 bg-teal-100 dark:bg-teal-800 text-slate-700 dark:text-slate-200">
         <option value="dep">In Transit</option>
         <option value="sch">Scheduled</option>
         <option value="arr">Arrived</option>

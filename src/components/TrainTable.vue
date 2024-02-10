@@ -23,7 +23,8 @@ const getNextStop = (trainNumber: string) => {
 };
 </script>
 <template>
-  <table>
+  <div class="relative my-2 mx-4 py-0 px-3 rounded-lg border border-slate-700 dark:border-slate-500 w-11/12">
+    <table class="table-auto border-collapse border-spacing-2 text-center w-full">
       <thead>
         <th>#</th>
         <th>From</th>
@@ -38,12 +39,13 @@ const getNextStop = (trainNumber: string) => {
               props.filteredTrains.includes(train)"
             @click="emits('selectTrain', train, props.trainStatus === 'dep')"
           >
-            <td>{{ train }}</td>
-            <td>{{ trainData[train].from }}</td>
-            <td>{{ trainData[train].to }}</td>
-            <td v-if="props.trainStatus=='dep'">{{ getNextStop(train) }}</td>
+            <td class="border-b border-slate-700 p-2 m-2">{{ train }}</td>
+            <td class="border-b border-slate-700 p-2 m-2">{{ trainData[train].from }}</td>
+            <td class="border-b border-slate-700 p-2 m-2">{{ trainData[train].to }}</td>
+            <td class="border-b border-slate-700 p-2 m-2" v-if="props.trainStatus=='dep'">{{ getNextStop(train) }}</td>
           </tr>
         </template>
       </tbody>
     </table>
+  </div>
 </template>
