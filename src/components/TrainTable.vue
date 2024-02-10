@@ -5,7 +5,6 @@ interface Props {
   trainStatus: TrainStatus;
   trainData: TrainInfoObject;
   trainGroups: Record<string, string[]>;
-  trainSelected: string;
   filteredTrains: string[];
 }
 
@@ -23,13 +22,13 @@ const getNextStop = (trainNumber: string) => {
 };
 </script>
 <template>
-  <div class="relative my-2 mx-4 py-0 px-3 rounded-lg border border-slate-700 dark:border-slate-500 w-11/12">
-    <table class="table-auto border-collapse border-spacing-2 text-center w-full">
+  <div class="relative py-2 px-4 rounded-lg border border-slate-700 dark:border-slate-500 w-full overflow-auto">
+    <table class="table-auto border-collapse text-center w-full">
       <thead>
-        <th>#</th>
-        <th>From</th>
-        <th>To</th>
-        <th v-if="props.trainStatus=='dep'">Next Stop</th>
+        <th class="border-b border-slate-950 dark:border-slate-50">#</th>
+        <th class="border-b border-slate-950 dark:border-slate-50">From</th>
+        <th class="border-b border-slate-950 dark:border-slate-50">To</th>
+        <th class="border-b border-slate-950 dark:border-slate-50" v-if="props.trainStatus=='dep'">Next Stop</th>
       </thead>
       <tbody>
         <template v-for="train in trainGroups[props.trainStatus]">
@@ -39,10 +38,10 @@ const getNextStop = (trainNumber: string) => {
               props.filteredTrains.includes(train)"
             @click="emits('selectTrain', train, props.trainStatus === 'dep')"
           >
-            <td class="border-b border-slate-700 p-2 m-2">{{ train }}</td>
-            <td class="border-b border-slate-700 p-2 m-2">{{ trainData[train].from }}</td>
-            <td class="border-b border-slate-700 p-2 m-2">{{ trainData[train].to }}</td>
-            <td class="border-b border-slate-700 p-2 m-2" v-if="props.trainStatus=='dep'">{{ getNextStop(train) }}</td>
+            <td class="border-b border-slate-700 p-2 text-lg">{{ train }}</td>
+            <td class="border-b border-slate-700 p-2">{{ trainData[train].from }}</td>
+            <td class="border-b border-slate-700 p-2">{{ trainData[train].to }}</td>
+            <td class="border-b border-slate-700 p-2" v-if="props.trainStatus=='dep'">{{ getNextStop(train) }}</td>
           </tr>
         </template>
       </tbody>

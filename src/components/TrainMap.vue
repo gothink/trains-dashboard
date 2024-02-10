@@ -10,7 +10,7 @@ interface Props {
   mapBounds: [[number, number], [number, number]];
   mapCoords: [number, number];
   options?: {
-    autoRefresh?: boolean,
+    mapFollow?: boolean,
     mapTiles?: boolean,
     railTiles?: boolean,
   };
@@ -18,7 +18,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   options: () => ({
-    autoRefresh: true,
+    mapFollow: true,
     mapTiles: true,
     railTiles: true,
   })
@@ -32,6 +32,8 @@ const emits = defineEmits<{
 const zoom = ref(10);
 const mapElem = ref<HTMLElement>();
 const leafMap = ref<L.Map>();
+const leafMapTiles = ref<L.TileLayer>();
+const leafRailTiles = ref<L.TileLayer>();
 const markers = ref<Record<string, L.Marker>>({});
 
 const updateMarker = (trainNumber: string, coords: [number, number]) => {
@@ -71,41 +73,68 @@ watch(props, (newProps, oldProps) => {
   }
 
   // update map view
-  if (newProps.options.autoRefresh && leafMap.value) {
-    if (props.trainSelected !== '') {
-      if (markers.value[props.trainSelected]) {
-      markers.value[props.trainSelected].openPopup();
-        if (
-          leafMap.value.getBounds().contains(newProps.mapCoords) &&
-          leafMap.value.getZoom() >= zoom.value
-        ) {
-          leafMap.value.panTo(newProps.mapCoords);
-        } else {
-          leafMap.value.flyTo(newProps.mapCoords, zoom.value);
+  if (leafMap.value) {
+    if (newProps.options.mapFollow) {
+      if (newProps.trainSelected !== '') {
+        if (markers.value[newProps.trainSelected]) {
+          markers.value[newProps.trainSelected].openPopup();
+          if (
+            leafMap.value.getBounds().contains(newProps.mapCoords) &&
+            leafMap.value.getZoom() >= zoom.value
+          ) {
+            leafMap.value.panTo(newProps.mapCoords);
+          } else {
+            leafMap.value.flyTo(newProps.mapCoords, zoom.value);
+          }
         }
+      } else {
+        leafMap.value.flyToBounds(newProps.mapBounds);
+        markers.value[oldProps.trainSelected]?.closePopup();
       }
-    } else {
-      leafMap.value.flyToBounds(newProps.mapBounds);
+    }
+
+    // update map layers
+    if (leafMapTiles.value) {
+      if (!newProps.options.mapTiles && leafMap.value.hasLayer(leafMapTiles.value)) {
+        leafMap.value.removeLayer(leafMapTiles.value);
+      } else if (newProps.options.mapTiles && !leafMap.value.hasLayer(leafMapTiles.value)) {
+        leafMap.value.addLayer(leafMapTiles.value);
+      }
+    }
+
+    if (leafRailTiles.value) {
+      if (!newProps.options.mapTiles && leafMap.value.hasLayer(leafRailTiles.value)) {
+        leafMap.value.removeLayer(leafRailTiles.value);
+      } else if (newProps.options.mapTiles && !leafMap.value.hasLayer(leafRailTiles.value)) {
+        leafMap.value.addLayer(leafRailTiles.value);
+      }
     }
   }
 });
 
 onMounted(() => {
   if (props.trainMap && mapElem.value) {
-    const leafMapTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    leafMapTiles.value = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
     });
 
-    const leafRailTiles = L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
+    leafRailTiles.value = L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      minZoom: 12,
+      minZoom: 6,
       attribution: 'Data <a href="https://www.openstreetmap.org/copyright">&copy; OpenStreetMap contributors</a>, Style: <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA 2.0</a> <a href="http://www.openrailwaymap.org/">OpenRailwayMap</a> and OpenStreetMap'
     });
     
     leafMap.value = L.map(mapElem.value, {
       closePopupOnClick: false,
-      layers: [leafMapTiles, leafRailTiles],
     });
+
+    if (props.options.mapTiles) {
+      leafMap.value.addLayer(leafMapTiles.value);
+    }
+
+    if (props.options.railTiles) {
+      leafMap.value.addLayer(leafRailTiles.value);
+    }
 
     leafMap.value.on('moveend', getTrainsInView);
     leafMap.value.on('zoomend', getTrainsInView);

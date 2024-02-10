@@ -5,8 +5,19 @@ import TrainMap from './components/TrainMap.vue';
 import TrainTable from './components/TrainTable.vue';
 import TrainView from '@/components/TrainView.vue';
 
+interface Opts {
+    mapFollow: boolean;
+    mapTiles: boolean;
+    railTiles: boolean;
+}
+
 const initialized = ref(false);
 const showMap = ref(true);
+const options = ref<Opts>({
+  mapFollow: true,
+  mapTiles: true,
+  railTiles: true,
+});
 const trainStatus = ref<TrainStatus>('dep');
 const trainData = ref<TrainInfoObject>({});
 const filteredTrains = ref<string[]>([]);
@@ -86,23 +97,39 @@ onMounted(async () => {
 
 <template>
   <main v-if="initialized" class="h-max">
-    <div class="sticky top-0 h-[50vh]">
+    <div v-if="showMap" class="sticky top-0 h-[50vh]">
       <TrainMap
-        v-show="showMap"
         :train-data="trainData"
         :train-map="trainMapIds"
         :train-selected="trainSelected"
         :map-coords="mapCoords"
         :map-bounds="mapBounds"
+        :options="options"
         @select-train="selectTrain"
         @filter-trains="(filtered) => filteredTrains = filtered"
       />
+      <div>
+        <label>
+          <input type="checkbox" v-model="options.mapFollow">
+          Map Sync
+        </label>
+        <label>
+          <input type="checkbox" v-model="options.mapTiles">
+          Draw Map
+        </label>
+        <label>
+          <input type="checkbox" v-model="options.railTiles">
+          Draw Railways
+        </label>
+      </div>
+    </div>
+    <div>
       <button class="my-1 mx-auto px-2 rounded-sm bg-teal-200 dark:bg-teal-900 text-slate-600 dark:text-slate-300" @click="showMap = !showMap">
         {{ showMap ? 'Hide' : 'Show' }} Map
       </button>
     </div>
-    <div v-if="trainSelected === ''">
-      <select v-model="trainStatus" class=" my-2 mx-auto p-2 bg-teal-100 dark:bg-teal-800 text-slate-700 dark:text-slate-200">
+    <div v-if="trainSelected === ''" class=" overflow-hidden">
+      <select v-model="trainStatus" class="my-2 mx-auto p-2 bg-teal-100 dark:bg-teal-800 text-slate-700 dark:text-slate-200">
         <option value="dep">In Transit</option>
         <option value="sch">Scheduled</option>
         <option value="arr">Arrived</option>
@@ -112,7 +139,6 @@ onMounted(async () => {
         :train-data="trainData"
         :train-groups="trainGroups"
         :train-status="trainStatus"
-        :train-selected="trainSelected"
         :filtered-trains="filteredTrains"
         @select-train="selectTrain"
       />
