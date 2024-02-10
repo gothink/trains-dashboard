@@ -32,7 +32,12 @@ const getNextStop = (trainNumber: string) => {
       </thead>
       <tbody>
         <template v-for="train in trainGroups[props.trainStatus]">
-          <tr v-if="!props.filteredTrains.length || props.filteredTrains.includes(train)" @click="emits('selectTrain', train, props.trainStatus === 'dep')">
+          <tr
+            v-if="props.trainStatus !== 'dep' ||
+              !props.filteredTrains.length ||
+              props.filteredTrains.includes(train)"
+            @click="emits('selectTrain', train, props.trainStatus === 'dep')"
+          >
             <td>{{ train }}</td>
             <td>{{ trainData[train].from }}</td>
             <td>{{ trainData[train].to }}</td>

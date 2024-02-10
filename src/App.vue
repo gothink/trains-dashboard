@@ -6,6 +6,7 @@ import TrainTable from './components/TrainTable.vue';
 import TrainView from '@/components/TrainView.vue';
 
 const initialized = ref(false);
+const showMap = ref(true);
 const trainStatus = ref<TrainStatus>('dep');
 const trainData = ref<TrainInfoObject>({});
 const filteredTrains = ref<string[]>([]);
@@ -86,6 +87,7 @@ onMounted(async () => {
 <template>
   <main v-if="initialized" class="h-dvh">
     <TrainMap
+      v-show="showMap"
       class="sticky top-0"
       :train-data="trainData"
       :train-map="trainMapIds"
@@ -95,6 +97,7 @@ onMounted(async () => {
       @select-train="selectTrain"
       @filter-trains="(filtered) => filteredTrains = filtered"
     />
+    <button @click="showMap = !showMap">{{ showMap ? 'Hide' : 'Show' }} Map</button>
     <div v-if="trainSelected === ''">
       <select v-model="trainStatus">
         <option value="dep">In Transit</option>
@@ -113,6 +116,7 @@ onMounted(async () => {
     </div>
     <div v-else>
       <button @click="trainSelected=''">Back to trains</button>
+      <br>
       <TrainView
         :train-selected="trainSelected"
         :train-times="trainData[trainSelected].times"
