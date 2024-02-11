@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-import type { TrainInfoObject, TrainInfo, TrainStatus } from '@/util/types';
+import type { TrainInfoObject, TrainInfo, TrainStatus, TrainTimes } from '@/util/types';
 import TrainMap from './components/TrainMap.vue';
 import TrainTable from './components/TrainTable.vue';
 import TrainView from '@/components/TrainView.vue';
@@ -27,6 +27,8 @@ const trainGroups = ref<Record<TrainStatus, string[]>>({
   dep: [],
   sch: [],
 });
+
+const stationStops = ref<Record<string, [string, number][]>>({});
 const trainMapIds = ref<Record<string, [number, number]>>({});
 const trainSelected = ref('');
 
@@ -48,28 +50,37 @@ watch(trainData, (newData) => {
   trainGroups.value = { arr: [], dep: [], sch: [] };
   trainMapIds.value = {};
   let newBounds = mapBounds.value;
-  for (const tnum in newData) {
-    if (newData[tnum].departed) {
-      if (newData[tnum].arrived) {
-        trainGroups.value['arr'].push(tnum);
+  for (const trainId in newData) {
+    if (newData[trainId].departed) {
+      if (newData[trainId].arrived) {
+        trainGroups.value['arr'].push(trainId);
       } else {
-        trainGroups.value['dep'].push(tnum);
+        trainGroups.value['dep'].push(trainId);
 
         // This is an active train, update `mapBounds` and `mapCoords`
-        let tCoords = getTrainCoords(tnum, newData[tnum]);
+        let tCoords = getTrainCoords(trainId, newData[trainId]);
         if (tCoords) {
-          trainMapIds.value[tnum] = [tCoords[0], tCoords[1]];
+          trainMapIds.value[trainId] = [tCoords[0], tCoords[1]];
           newBounds = [
             [Math.min(newBounds[0][0], tCoords[0]), Math.min(newBounds[0][1], tCoords[1])],
             [Math.max(newBounds[1][0], tCoords[0]), Math.max(newBounds[1][1], tCoords[1])],
           ];
-          if (trainSelected.value === tnum) {
+          if (trainSelected.value === trainId) {
             mapCoords.value = [tCoords[0], tCoords[1]];
           }
         }
       }
     } else {
-      trainGroups.value['sch'].push(tnum);
+      trainGroups.value['sch'].push(trainId);
+    }
+
+    // organize by station stop
+    for (let i = 0; i < newData[trainId].times.length; i++) {
+      if (stationStops.value[newData[trainId].times[i].code]) {
+        stationStops.value[newData[trainId].times[i].code].push([trainId, i]);
+      } else {
+        stationStops.value[newData[trainId].times[i].code] = [[trainId, i]];
+      }
     }
   }
 
