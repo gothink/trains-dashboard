@@ -2,9 +2,10 @@
 import { onMounted, ref, watch } from 'vue';
 import type { TrainInfoObject, TrainInfo, TrainStatus, TrainTimes } from '@/util/types';
 import TrainMap from './components/TrainMap.vue';
-import TrainTable from './components/TrainTable.vue';
-import TrainView from '@/components/TrainView.vue';
-import StationStops from './components/StationStops.vue';
+
+import { useTrainsStore } from './stores/trainsStore';
+
+import { RouterView } from 'vue-router';
 
 interface Opts {
     mapFollow: boolean;
@@ -12,8 +13,10 @@ interface Opts {
     railTiles: boolean;
 }
 
+const trains = useTrainsStore();
+
 const initialized = ref(false);
-const showMap = ref(true);
+const showMap = ref(false);
 const options = ref<Opts>({
   mapFollow: true,
   mapTiles: true,
@@ -34,6 +37,7 @@ const trainSelected = ref('');
 
 const stationSelected = ref('');
 const stationFilter = ref('');
+const allStations = ref<[string, string, [number, number]][]>([]);
 const filteredStations = ref<[string, string][]>([]);
 
 const mapBounds = ref<[[number, number], [number, number]]>([[45.5, -78.5], [44.5,-76.5]]);
@@ -53,7 +57,13 @@ const getTrainCoords = (trainId: string, trainInfo: TrainInfo = trainData.value[
 const getStations = async () => {
   const response = await fetch('/stations');
   if (response.ok) {
-    console.log(`message received`);
+    let { stations, error } = await response.json();
+    if (error) {
+      console.log(error);
+    }
+    if (stations) {
+      allStations.value = stations;
+    }
   }
 };
 
@@ -119,7 +129,7 @@ const selectTrain = (trainId: string, inTransit: boolean = true) => {
 };
 
 onMounted(async () => {
-  await refreshData();
+  await trains.getTrainData();
   initialized.value = true;
   setInterval(refreshData, 60 * 1000);
 });
@@ -143,14 +153,6 @@ onMounted(async () => {
           <input type="checkbox" v-model="options.mapFollow">
           Map Sync
         </label>
-        <label>
-          <input type="checkbox" v-model="options.mapTiles">
-          Draw Map
-        </label>
-        <label>
-          <input type="checkbox" v-model="options.railTiles">
-          Draw Railways
-        </label>
       </div>
     </div>
     <div>
@@ -158,17 +160,20 @@ onMounted(async () => {
         {{ showMap ? 'Hide' : 'Show' }} Map
       </button>
     </div>
-    <div v-if="trainSelected === ''" class=" overflow-hidden">
+    <RouterLink to="/">Trains</RouterLink>
+    <RouterLink to="/stations">Stations</RouterLink>
+    <RouterView />
+    <!-- <div v-if="trainSelected === ''" class=" overflow-hidden">
       <select v-model="trainStatus" class="my-2 mx-auto p-2 bg-teal-100 dark:bg-teal-800 text-slate-700 dark:text-slate-200">
         <option value="dep">In Transit</option>
         <option value="sch">Scheduled</option>
         <option value="arr">Arrived</option>
       </select>
 
-      <!-- <input type="text" list="stations-datalist" v-model="stationFilter">
+      <input type="text" list="stations-datalist" v-model="stationFilter">
       <datalist id="stations-datalist">
         <option v-for="station in filteredStations" :value="station[0]">{{ `${station[1]} (${station[0]})` }}</option>
-      </datalist> -->
+      </datalist>
 
       <TrainTable
         :train-data="trainData"
@@ -188,6 +193,6 @@ onMounted(async () => {
     </div>
     <div v-if="stationSelected">
       <StationStops :train-data="trainData" :train-station="stationSelected" />
-    </div>
+    </div> -->
   </main>
 </template>
