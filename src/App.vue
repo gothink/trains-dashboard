@@ -4,6 +4,7 @@ import type { TrainInfoObject, TrainInfo, TrainStatus, TrainTimes } from '@/util
 import TrainMap from './components/TrainMap.vue';
 import TrainTable from './components/TrainTable.vue';
 import TrainView from '@/components/TrainView.vue';
+import StationStops from './components/StationStops.vue';
 
 interface Opts {
     mapFollow: boolean;
@@ -28,9 +29,12 @@ const trainGroups = ref<Record<TrainStatus, string[]>>({
   sch: [],
 });
 
-const stationStops = ref<Record<string, [string, number][]>>({});
 const trainMapIds = ref<Record<string, [number, number]>>({});
 const trainSelected = ref('');
+
+const stationSelected = ref('');
+const stationFilter = ref('');
+const filteredStations = ref<[string, string][]>([]);
 
 const mapBounds = ref<[[number, number], [number, number]]>([[45.5, -78.5], [44.5,-76.5]]);
 const mapCoords = ref<[number, number]>([45.5,-75.5]);
@@ -45,6 +49,30 @@ const getTrainCoords = (trainId: string, trainInfo: TrainInfo = trainData.value[
     return [trainInfo.lat, trainInfo.lng];
   }
 };
+
+const getStations = async () => {
+  const response = await fetch('/stations');
+  if (response.ok) {
+    console.log(`message received`);
+  }
+};
+
+// watch(stationFilter, (filterString) => {
+//   filteredStations.value = [];
+//   filterString = filterString.toLowerCase();
+//   for (const statId in stations) {
+//     if (
+//       filterString === '' ||
+//       statId.toLowerCase().includes(filterString) ||
+//       stations[statId as keyof typeof stations].name.toLowerCase().includes(filterString)
+//     ) {
+//       filteredStations.value.push([statId, stations[statId as keyof typeof stations].name]);
+//     }
+//   }
+//   if (filteredStations.value.length === 1) {
+//     stationSelected.value = filteredStations.value[0][0];
+//   }
+// }, { immediate: true });
 
 watch(trainData, (newData) => {
   trainGroups.value = { arr: [], dep: [], sch: [] };
@@ -72,15 +100,6 @@ watch(trainData, (newData) => {
       }
     } else {
       trainGroups.value['sch'].push(trainId);
-    }
-
-    // organize by station stop
-    for (let i = 0; i < newData[trainId].times.length; i++) {
-      if (stationStops.value[newData[trainId].times[i].code]) {
-        stationStops.value[newData[trainId].times[i].code].push([trainId, i]);
-      } else {
-        stationStops.value[newData[trainId].times[i].code] = [[trainId, i]];
-      }
     }
   }
 
@@ -146,6 +165,11 @@ onMounted(async () => {
         <option value="arr">Arrived</option>
       </select>
 
+      <!-- <input type="text" list="stations-datalist" v-model="stationFilter">
+      <datalist id="stations-datalist">
+        <option v-for="station in filteredStations" :value="station[0]">{{ `${station[1]} (${station[0]})` }}</option>
+      </datalist> -->
+
       <TrainTable
         :train-data="trainData"
         :train-groups="trainGroups"
@@ -161,6 +185,9 @@ onMounted(async () => {
         :train-selected="trainSelected"
         :train-times="trainData[trainSelected].times"
       />
+    </div>
+    <div v-if="stationSelected">
+      <StationStops :train-data="trainData" :train-station="stationSelected" />
     </div>
   </main>
 </template>

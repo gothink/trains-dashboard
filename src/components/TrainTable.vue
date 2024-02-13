@@ -22,7 +22,7 @@ const getNextStop = (trainNumber: string) => {
 };
 </script>
 <template>
-  <div class="relative py-2 px-4 rounded-lg border border-slate-700 dark:border-slate-500 w-full overflow-auto">
+  <div class="py-2 px-4 rounded-lg border border-slate-700 dark:border-slate-500 w-full overflow-auto">
     <table class="table-auto border-collapse text-center w-full">
       <thead>
         <th class="border-b border-slate-950 dark:border-slate-50">#</th>
