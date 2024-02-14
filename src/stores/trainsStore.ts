@@ -3,10 +3,10 @@ import { ref } from "vue";
 import type { TrainInfoObject } from "@/util/types";
 
 export const useTrainsStore = defineStore('trains', () => {
-  const initialized = ref(false);
   const trainData = ref<TrainInfoObject>({});
   const filteredTrains = ref<string[]>([]);
   const trainSelected = ref('');
+  const trainStatus = ref('dep');
   const stationSelected = ref('');
   const stationData = ref<[string, string, [number, number]][]>([]);
 
@@ -32,6 +32,7 @@ export const useTrainsStore = defineStore('trains', () => {
     trainData,
     trainSelected,
     filteredTrains,
+    trainStatus,
     getTrainData,
     stationData,
     stationSelected,

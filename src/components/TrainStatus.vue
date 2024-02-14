@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useTrainsStore } from '@/stores/trainsStore';
-
+import { useRouter } from 'vue-router';
 
 const trains = useTrainsStore();
+const router = useRouter();
 
 const nextStopId = computed(() => trains.trainData[trains.trainSelected].times.findIndex((station) => station.eta !== 'ARR'));
 const previousStops = computed(() => trains.trainData[trains.trainSelected].times.slice(0, nextStopId.value));
@@ -11,13 +12,17 @@ const nextStops = computed(() => trains.trainData[trains.trainSelected].times.sl
 
 const showLast = ref<boolean>(false);
 
+watch(trains.trainData[trains.trainSelected], (newData) => {
+  console.log(`new trains!`);
+});
+
 onMounted(() => {
   if (nextStopId.value === -1) showLast.value = true;
 });
 </script>
 <template>
   <div>
-    <button @click="trains.trainSelected = ''">&larr; Back to Trains</button>
+    <button @click="router.push('/')">&larr; Back to Trains</button>
     <label>
       <input v-model="showLast" type="checkbox">
       {{ showLast ? 'Hide' : 'Show' }} Previous Stops

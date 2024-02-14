@@ -7,23 +7,13 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
-      name: 'Home',
-      component: TrainView,
-    },
-    {
-      path: '/train/:trainSelected',
-      name: 'TrainView',
+      path: '/:trainSelected?',
+      name: 'trains',
       component: TrainView,
       props: true,
     },
     {
-      path: '/stations',
-      name: 'StationList',
-      component: StationView,
-    },
-    {
-      path: '/station/:stationCode',
+      path: '/stations/:stationCode?',
       name: 'StationStatus',
       component: StationView,
       props: true,
