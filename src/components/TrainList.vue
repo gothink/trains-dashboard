@@ -16,13 +16,13 @@ const getNextStop = (trainNumber: string) => {
 
 </script>
 <template>
-  <div class="overflow-hidden">
+  <div class="py-2 px-4 rounded-lg border border-slate-700 dark:border-slate-500 overflow-hidden">
     <select v-model="trains.trainStatus" class="my-2 mx-auto p-2 bg-teal-100 dark:bg-teal-800 text-slate-700 dark:text-slate-200">
       <option value="dep">In Service</option>
       <option value="sch">Scheduled</option>
       <option value="arr">Arrived</option>
     </select>
-    <div class="py-2 px-4 rounded-lg border border-slate-700 dark:border-slate-500 w-full overflow-auto">
+    <div class="w-full overflow-auto">
       <table class="table-auto border-collapse text-center w-full">
         <thead>
           <th class="border-b border-slate-950 dark:border-slate-50">#</th>

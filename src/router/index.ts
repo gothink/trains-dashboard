@@ -14,7 +14,7 @@ const router = createRouter({
     },
     {
       path: '/stations/:stationCode?',
-      name: 'StationStatus',
+      name: 'stations',
       component: StationView,
       props: true,
     },

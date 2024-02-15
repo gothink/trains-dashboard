@@ -20,7 +20,7 @@ const popUpContent = (trainId: string) => {
     <div class="flex flex-col justify-center">
     <div class="mx-auto font-bold text-lg">${trainId}</div>
     <div class="mx-auto">
-      <svg width="24px" height="24x" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
           d="M12 4V20M12 4L8 8M12 4L16 8"
           stroke="#000000"
@@ -43,6 +43,16 @@ const getTrainCoords = (trainId: string) => {
   }
 };
 
+const markerHover = (e: L.LeafletEvent, trainId: string) => {
+  if (trainId !== trains.trainSelected) {
+    if (e.type === 'mouseover') {
+      e.target.openPopup();
+    } else if (e.type === 'mouseout') {
+      e.target.closePopup();
+    }
+  }
+};
+
 const updateMarker = (trainNumber: string, coords: [number, number]) => {
   if (leafMap.value) {
     if (markers.value[trainNumber]) {
@@ -58,7 +68,9 @@ const updateMarker = (trainNumber: string, coords: [number, number]) => {
           closeOnEscapeKey: false,
           autoClose: false,
         })
-      .on('click', () => router.push(`/${trainNumber}`));
+      .on('click', () => router.push(`/${trainNumber}`))
+      .on('mouseover', (e) => markerHover(e, trainNumber))
+      .on('mouseout', (e) => markerHover(e, trainNumber));
     }
   }
 };
