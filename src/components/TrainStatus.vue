@@ -7,7 +7,21 @@ const trains = useTrainsStore();
 const router = useRouter();
 
 const nextStopId = computed(() => trains.trainData[trains.trainSelected].times.findIndex((station) => station.eta !== 'ARR'));
-const previousStops = computed(() => trains.trainData[trains.trainSelected].times.slice(0, nextStopId.value));
+const previousStops = computed(() => {
+  if (trains.trainData[trains.trainSelected].departed) {
+    // in service or arrived
+    if (trains.trainData[trains.trainSelected].arrived) {
+      //arrived
+      return trains.trainData[trains.trainSelected].times;
+    } else if (nextStopId.value > -1) {
+      // in service
+      return trains.trainData[trains.trainSelected].times.slice(0, nextStopId.value);
+    }
+  } else {
+    //scheduled
+    return [];
+  }
+});
 const nextStops = computed(() => trains.trainData[trains.trainSelected].times.slice(nextStopId.value));
 
 const showLast = ref<boolean>(false);

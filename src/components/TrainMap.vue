@@ -193,13 +193,5 @@ onUnmounted(() => {
 });
 </script>
 <template>
-  <div class="h-[50vh]">
-    <div id="mapElem" ref="mapElem" class="h-[90%]"></div>
-    <div class="h-[10%]">
-      <label>
-        <input type="checkbox" v-model="mapFollow">
-        Map Sync
-      </label>
-    </div>
-  </div>
+  <div id="mapElem" ref="mapElem" class="h-full"></div>
 </template>
