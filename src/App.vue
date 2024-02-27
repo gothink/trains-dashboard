@@ -47,15 +47,17 @@ onMounted(async () => {
         {{ showMap ? 'Hide' : 'Show' }} Map
       </button>
     </div>
-    <ul class="flex flex-wrap text-center bg-slate-300 text-slate-700 active:bg-slate-100 active:text-blue-700 dark:bg-slate-600 dark:text-slate-300 active:dark:bg-slate-900 active:dark:text-blue-500">
-      <li class="me-2 p-4 rounded-t-lg" :class="route.name === 'trains' ? 'active' : ''">
-        <RouterLink to="/" class="border border-1 border-b-0 bg-slate-200 dark:bg-slate-900 text-slate-600 dark:text-slate-300">Trains</RouterLink>
-      </li>
-      <li class="p-4 rounded-t-lg bg-teal-200 dark:bg-teal-900 text-slate-600 dark:text-slate-300">
-        <RouterLink to="/stations">Stations</RouterLink>
-      </li>
-    </ul>
-    <RouterView />
+    <div class="w-full sm:w-2/3 sm:min-w-fit mx-auto">
+      <ul class="flex flex-wrap justify-center text-center text-slate-700 dark:text-slate-300">
+        <li class="p-4 w-1/2" :class="route.name === 'trains' ? 'font-bold border-b-4 border-slate-700 dark:border-slate-500 bg-slate-50 dark:bg-slate-900' : 'underline'">
+          <RouterLink to="/">Trains</RouterLink>
+        </li>
+        <li class="p-4 w-1/2" :class="route.name === 'stations' ? 'font-bold border-b-4 border-slate-700 dark:border-slate-500 bg-slate-50 dark:bg-slate-900' : 'underline'">
+          <RouterLink to="/stations">Stations</RouterLink>
+        </li>
+      </ul>
+      <RouterView />
+    </div>
     <!-- <div v-if="trainSelected === ''" class=" overflow-hidden">
 
       <input type="text" list="stations-datalist" v-model="stationFilter">
