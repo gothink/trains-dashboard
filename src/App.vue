@@ -32,8 +32,8 @@ const showMap = ref(true);
 onMounted(async () => {
   await trains.getTrainData();
   initialized.value = true;
-  // setInterval(trains.getTrainData, 60 * 1000);
-  // await trains.getStationData();
+  setInterval(trains.getTrainData, 60 * 1000);
+  trains.getStationData();
 });
 </script>
 
@@ -48,7 +48,7 @@ onMounted(async () => {
     <div class="w-full lg:max-w-screen-lg overflow-scroll px-4">
       <ul class="flex flex-wrap justify-center text-center">
         <li class="p-4 w-1/2 border-neutral-700 dark:border-neutral-400" :class="route.name === 'trains' ? 'font-bold border-2 border-b-0' : 'border-b-2 bg-stone-200 dark:bg-stone-900 underline'">
-          <RouterLink to="/">Trains</RouterLink>
+          <RouterLink :to="trains.trainSelected || '/'">Trains</RouterLink>
         </li>
         <li class="p-4 w-1/2 border-neutral-700 dark:border-neutral-400" :class="route.name === 'stations' ? 'font-bold border-2 border-b-0' : 'border-b-2 bg-stone-200 dark:bg-stone-900 underline'">
           <RouterLink to="/stations">Stations</RouterLink>

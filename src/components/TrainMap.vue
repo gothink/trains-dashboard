@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, toRaw, watch } from 'vue';
 import L from 'leaflet';
 import { useTrainsStore } from '@/stores/trainsStore';
 import { useRouter } from 'vue-router';
@@ -60,7 +60,7 @@ const updateMarker = (trainNumber: string, coords: [number, number]) => {
       markers.value[trainNumber].setPopupContent(popUpContent(trainNumber));
     } else {
       markers.value[trainNumber] = L.marker(coords)
-      .addTo(leafMap.value)
+      .addTo(toRaw(leafMap.value))
       .bindPopup(
         popUpContent(trainNumber),
         {
@@ -173,9 +173,7 @@ onMounted(async () => {
     leafMap.value = L.map(mapElem.value, {
       closePopupOnClick: false,
       layers: [OSMBaseMap, OSMRailMap],
-    });
-
-    leafMap.value.setView([63.47, -96.06], 4);
+    }).setView([63.47, -96.06], 4);
 
     leafMap.value.on('moveend', getTrainsInView);
     leafMap.value.on('zoomend', getTrainsInView);

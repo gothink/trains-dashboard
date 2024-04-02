@@ -93,7 +93,7 @@ const showTrain = (trainId: string, status = trains.trainStatus) => {
               <div class="text-slate-400 text-right">Status:</div>
               <div class="text-left sm:text-base ml-1">{{ formatDelay(train.times[nextStops[trainId.toString()]]?.diffMin) }}</div>
             </div>
-            <div v-else-if="trains.trainStatus === 'all'">
+            <div v-else-if="trains.trainStatus === 'all'" class="text-center">
               <span>{{ showTrain(trainId.toString(), 'dep') ? 'In Service' : showTrain(trainId.toString(), 'arr') ? 'Arrived' : 'Scheduled' }}</span>
             </div>
           </div>
