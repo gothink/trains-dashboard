@@ -26,6 +26,14 @@ const nextStops = computed(() => trains.trainData[trains.trainSelected].times.sl
 
 const showLast = ref<boolean>(false);
 
+const timeFormat = (timeStr?: string) => {
+  if (timeStr) {
+    let dateTime = new Date(timeStr);
+    return dateTime.toLocaleTimeString();
+  }
+  return '--';
+};
+
 watch(trains.trainData[trains.trainSelected], (newData) => {
   console.log(`new trains!`);
 });
@@ -37,39 +45,34 @@ onMounted(() => {
 <template>
   <div>
     <button @click="router.push('/')">&larr; Back to Trains</button>
-    <label>
-      <input v-model="showLast" type="checkbox">
-      {{ showLast ? 'Hide' : 'Show' }} Previous Stops
-    </label>
-    <table>
+    <header>
+      <h1 class="text-3xl p-2 w-max border rounded-full">{{ trains.trainSelected }}</h1>
+    </header>
+    <table class="w-full border text-center">
       <thead>
-        <th colspan="5">{{ trains.trainSelected }}</th>
+        <tr class="border">
+          <th class="border" rowspan="2">Station</th>
+          <th class="border" rowspan="2">ETA</th>
+          <th class="border" colspan="2">Arrival</th>
+          <th class="border" colspan="2">Departure</th>
+          <th class="border" rowspan="2">Delay</th>
+        </tr>
+        <tr>
+          <th class="border">Estimated</th>
+          <th class="border">Scheduled</th>
+          <th class="border">Estimated</th>
+          <th class="border">Scheduled</th>
+        </tr>
       </thead>
-      <tbody v-if="showLast">
-        <th>Previous Stops:</th>
-        <tr v-for="stop of previousStops">
-          <td>{{ stop.station }}</td>
-          <td>{{ stop.arrival?.estimated }}</td>
-          <td>{{ stop.arrival?.scheduled }}</td>
-        </tr>
-      </tbody>
-      <tbody>
-        <tr>
-          <th colspan="5">Next Stops:</th>
-        </tr>
-        <tr>
-          <th>Station</th>
-          <th>ETA</th>
-          <th>Estimated</th>
-          <th>Scheduled</th>
-          <th>Delay</th>
-        </tr>
-        <tr v-for="stop of nextStops">
-          <td>{{ `${stop.station} (${stop.code})` }}</td>
+      <tbody class="divide-y">
+        <tr v-for="stop of trains.trainData[trains.trainSelected].times" class="even:bg-stone-950 odd:bg-stone-900 hover:bg-stone-800">
+          <td class="py-2">{{ `${stop.station} (${stop.code})` }}</td>
           <td>{{ stop.eta }}</td>
-          <td>{{ stop.estimated }}</td>
-          <td>{{ stop.scheduled }}</td>
-          <td>{{ stop.diffMin }}</td>
+          <td>{{ timeFormat(stop.arrival?.estimated) }}</td>
+          <td>{{ timeFormat(stop.arrival?.scheduled) }}</td>
+          <td>{{ timeFormat(stop.departure?.estimated) }}</td>
+          <td>{{ timeFormat(stop.departure?.scheduled) }}</td>
+          <td>{{ stop.diffMin }} mins</td>
         </tr>
       </tbody>
     </table>

@@ -173,7 +173,9 @@ onMounted(async () => {
     leafMap.value = L.map(mapElem.value, {
       closePopupOnClick: false,
       layers: [OSMBaseMap, OSMRailMap],
-    }).setView([63.47, -96.06], 4);
+    });
+
+    leafMap.value.setView([63.47, -96.06], 4);
 
     leafMap.value.on('moveend', getTrainsInView);
     leafMap.value.on('zoomend', getTrainsInView);
@@ -193,5 +195,5 @@ onUnmounted(() => {
 });
 </script>
 <template>
-  <div id="mapElem" ref="mapElem" class="h-full"></div>
+  <div id="mapElem" ref="mapElem" class=" h-5/6"></div>
 </template>

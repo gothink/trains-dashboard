@@ -38,25 +38,25 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main v-if="initialized" class="h-max">
-    <div v-if="showMap" class="sticky top-0 h-[50vh]">
-      <TrainMap />
-    </div>
-    <div>
-      <button class="my-1 mx-auto px-2 rounded-sm bg-teal-200 dark:bg-teal-900 text-slate-600 dark:text-slate-300" @click="showMap = !showMap">
-        {{ showMap ? 'Hide' : 'Show' }} Map
+  <main v-if="initialized" class="flex flex-col lg:flex-row h-screen overflow-hidden">
+    <div class="flex-none h-[50vh] w-full lg:w-[50vw] lg:h-screen">
+      <TrainMap v-if="showMap" />
+      <button class="my-1 mx-auto px-2 rounded-sm bg-indigo-700 dark:bg-indigo-500" @click="showMap = !showMap">
+        {{ showMap ? '<< Hide' : '>> Show' }} Map
       </button>
     </div>
-    <div class="w-full sm:w-2/3 sm:min-w-fit mx-auto">
-      <ul class="flex flex-wrap justify-center text-center text-slate-700 dark:text-slate-300">
-        <li class="p-4 w-1/2" :class="route.name === 'trains' ? 'font-bold border-b-4 border-slate-700 dark:border-slate-500 bg-slate-50 dark:bg-slate-900' : 'underline'">
+    <div class="w-full lg:max-w-screen-lg overflow-scroll px-4">
+      <ul class="flex flex-wrap justify-center text-center">
+        <li class="p-4 w-1/2 border-neutral-700 dark:border-neutral-400" :class="route.name === 'trains' ? 'font-bold border-2 border-b-0' : 'border-b-2 bg-stone-200 dark:bg-stone-900 underline'">
           <RouterLink to="/">Trains</RouterLink>
         </li>
-        <li class="p-4 w-1/2" :class="route.name === 'stations' ? 'font-bold border-b-4 border-slate-700 dark:border-slate-500 bg-slate-50 dark:bg-slate-900' : 'underline'">
+        <li class="p-4 w-1/2 border-neutral-700 dark:border-neutral-400" :class="route.name === 'stations' ? 'font-bold border-2 border-b-0' : 'border-b-2 bg-stone-200 dark:bg-stone-900 underline'">
           <RouterLink to="/stations">Stations</RouterLink>
         </li>
       </ul>
-      <RouterView />
+      <div class="border-neutral-700 dark:border-neutral-400 border-2 border-t-0 p-2">
+        <RouterView />
+      </div>
     </div>
     <!-- <div v-if="trainSelected === ''" class=" overflow-hidden">
 

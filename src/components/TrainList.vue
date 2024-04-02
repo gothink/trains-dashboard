@@ -1,68 +1,104 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTrainsStore } from '@/stores/trainsStore';
 
 const trains = useTrainsStore();
 const router = useRouter();
 
-const getNextStop = (trainNumber: string) => {
+const getNextStop = (trainNumber: number) => {
   let stopIndex = trains.trainData[trainNumber].times.findIndex((station) => station.eta !== 'ARR');
   if (stopIndex > -1) {
     let nextStation = trains.trainData[trainNumber].times[stopIndex];
-    return `${nextStation.station} (${nextStation.eta})`;
+    return [nextStation.station, nextStation.eta];
   }
 };
 
+const nextStops = computed(() => {
+  let stops: Record<string, number> = {};
+  for (const trainId in trains.trainData) {
+    let stopIndex = trains.trainData[trainId].times.findIndex((station) => station.eta !== 'ARR');
+    if (stopIndex > -1) {
+      stops[trainId] = stopIndex;
+    }
+  }
+  return stops;
+});
+
+const formatDelay = (delay: number) => {
+  if (delay > 0) {
+    return `${delay.toString()} mins late`;
+  } else if (delay < 0) {
+    return `${Math.abs(delay).toString()} mins early`;
+  } else {
+    return `On-time`;
+  }
+};
+
+const showTrain = (trainId: string, status = trains.trainStatus) => {
+  if (status === 'all') {
+    return true;
+  }
+  if (status === 'dep' && trains.filteredTrains.includes(trainId) && trains.trainData[trainId].departed && !trains.trainData[trainId].arrived) {
+    return true;
+  }
+  if (status === 'sch' && !trains.trainData[trainId].departed && !trains.trainData[trainId].arrived) {
+    return true;
+  }
+  if (status === 'arr' && trains.trainData[trainId].departed && trains.trainData[trainId].arrived) {
+    return true;
+  }
+  return false;
+}
+
 </script>
 <template>
-  <div class="py-2 px-4 overflow-hidden bg-slate-50 dark:bg-slate-900">
-    <div class="w-full text-center">
-      <select v-model="trains.trainStatus" class="my-2 p-2 bg-teal-100 dark:bg-teal-800 text-slate-700 dark:text-slate-200">
-        <option value="dep">In Service</option>
-        <option value="sch">Scheduled</option>
-        <option value="arr">Arrived</option>
-      </select>
+  <div class="">
+    <div class="flex justify-between">
+      <div>
+        <label for="train-status-select">Show trains:</label>
+        <select name="train-status-select" v-model="trains.trainStatus" class="my-2 p-2 bg-indigo-700 dark:bg-indigo-500 text-neutral-900 dark:text-neutral-200">
+          <option value="all">All</option>
+          <option value="dep">In Service</option>
+          <option value="sch">Scheduled</option>
+          <option value="arr">Arrived</option>
+        </select>
+      </div>
+      <div>
+        <label for="train-search">Filter by train #:</label>
+        <input type="search" name="train-search">
+      </div>
     </div>
-    <div class="w-fit sm:mx-auto overflow-auto">
-      <table class="table-auto border-separate sm:border-collapse border-spacing-y-2 border-spacing-x-1 sm:border-spacing-0 text-center w-full">
-        <thead class="border-b border-slate-950 dark:border-slate-50">
-          <th class="text-right">#</th>
-          <th>From &rarr; To</th>
-          <th class="text-left" v-if="trains.trainStatus==='dep'">Next Stop</th>
-        </thead>
-        <tbody>
-          <template v-for="(train, trainId) in trains.trainData">
-            <tr
-              class="cursor-pointer outline outline-1 outline-offset-0 outline-slate-600 dark:outline-slate-400 rounded-md sm:outline-0 sm:border-0 sm:border-b border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800"
-              v-if="(trains.trainStatus === 'dep' &&
-                (train.departed && !train.arrived) &&
-                (!trains.filteredTrains.length ||
-                trains.filteredTrains.includes(trainId.toString()))) ||
-                (trains.trainStatus === 'arr' &&
-                (train.departed && train.arrived)) ||
-                (trains.trainStatus === 'sch' &&
-                (!train.departed && !train.arrived))"
-                @click="router.push(`/${trainId}`)"
-            >
-              <td class="p-2 text-lg font-bold text-right">{{ trainId }}</td>
-              <td class="p-2">
-                <div class="flex flex-col sm:flex-row justify-center">
-                  <div>
-                    {{ train.from }}
-                  </div>
-                  <div class="text-slate-600 dark:text-slate-400 hidden sm:block">&nbsp; &rarr; &nbsp;</div>
-                  <div class="text-slate-600 dark:text-slate-400 sm:hidden">&darr;</div>
-                  <div>
-                    {{ train.to }}
-                  </div>
-                </div>
-              </td>
-              <td class="p-2 text-left" v-if="trains.trainStatus==='dep'">{{ getNextStop(trainId.toString()) }}</td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
+    <ul class="flex flex-col gap-1 overflow-scroll">
+      <template v-for="(train, trainId) in trains.trainData" :key="trainId">
+        <li v-if="showTrain(trainId.toString())" @click="router.push(`/${trainId}`)" class="grid grid-cols-[1fr_5fr] sm:grid-cols-[2fr_5fr_5fr] gap-1 items-center bg-stone-900 p-2 border rounded-lg border-neutral-700 hover:border-neutral-400 cursor-pointer">
+          <div class="row-span-2 sm:row-auto self-stretch flex flex-col justify-center text-4xl text-center border-r border-slate-600">
+            <span>{{ trainId }}</span>
+          </div>
+          <div class="flex items-center text-center text-lg md:text-xl lg:text-2xl">
+            <div class="flex-1">
+              <div>{{ train.times[0].station ?? train.from }}</div>
+              <div class="hidden sm:block text-sm">{{ train.times[0].code }}</div>
+            </div>
+            <div class="mx-1">&rarr;</div>
+            <div class="flex-1">
+              <div>{{ train.times[train.times.length - 1].station ?? train.to }}</div>
+              <div class="hidden sm:block text-sm">{{ train.times[train.times.length - 1].code }}</div>
+            </div>
+          </div>
+          <div class="col-start-2 sm:col-auto">
+            <div v-if="trains.trainStatus === 'dep'" class="grid grid-cols-[1fr_2fr] items-end text-center text-sm">
+              <div class="text-slate-400 text-right">Next Stop:</div>
+              <div class="text-left sm:text-base ml-1">{{ train.times[nextStops[trainId]]?.station }} <span class="text-slate-400">in</span> {{ train.times[nextStops[trainId]]?.eta }}</div>
+              <div class="text-slate-400 text-right">Status:</div>
+              <div class="text-left sm:text-base ml-1">{{ formatDelay(train.times[nextStops[trainId.toString()]]?.diffMin) }}</div>
+            </div>
+            <div v-else-if="trains.trainStatus === 'all'">
+              <span>{{ showTrain(trainId.toString(), 'dep') ? 'In Service' : showTrain(trainId.toString(), 'arr') ? 'Arrived' : 'Scheduled' }}</span>
+            </div>
+          </div>
+        </li>
+      </template>
+    </ul>
   </div>
 </template>
