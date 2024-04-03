@@ -7,6 +7,10 @@ import StationStatus from '@/components/StationStatus.vue';
 const trains = useTrainsStore();
 const props = defineProps<{ stationCode?: string; }>();
 
+watch(props, (newProps) => {
+  trains.stationSelected = newProps.stationCode ?? '';
+});
+
 onMounted(() => {
   if (
     props.stationCode &&

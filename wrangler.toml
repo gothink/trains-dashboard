@@ -1,0 +1,3 @@
+kv_namespaces = [
+  { binding = "TRAIN_STATIONS", id = "90cccbead2814ddcb2fe8938922042ee" }
+]

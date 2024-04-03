@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTrainsStore } from '@/stores/trainsStore';
 
 const trains = useTrainsStore();
 const router = useRouter();
+
+const trainSearch = ref('');
 
 const getNextStop = (trainNumber: number) => {
   let stopIndex = trains.trainData[trainNumber].times.findIndex((station) => station.eta !== 'ARR');
@@ -36,6 +38,9 @@ const formatDelay = (delay: number) => {
 };
 
 const showTrain = (trainId: string, status = trains.trainStatus) => {
+  if (!filteredTrains.value.includes(trainId)) {
+    return false;
+  }
   if (status === 'all') {
     return true;
   }
@@ -51,23 +56,36 @@ const showTrain = (trainId: string, status = trains.trainStatus) => {
   return false;
 }
 
+const filteredTrains = computed(() => {
+  if (trainSearch.value === '') return Object.keys(trains.trainData);
+  
+  let trainList = [];
+  for (const trainId in trains.trainData) {
+    if (trainId.toLowerCase().includes(trainSearch.value.toLowerCase())) {
+      trainList.push(trainId);
+    }
+  }
+  return trainList;
+});
+
+watch(trainSearch, (newSearch, oldSearch) => {
+
+});
+
 </script>
 <template>
-  <div class="">
-    <div class="flex justify-between">
-      <div>
-        <label for="train-status-select">Show trains:</label>
-        <select name="train-status-select" v-model="trains.trainStatus" class="my-2 p-2 bg-indigo-700 dark:bg-indigo-500 text-neutral-900 dark:text-neutral-200">
-          <option value="all">All</option>
-          <option value="dep">In Service</option>
-          <option value="sch">Scheduled</option>
-          <option value="arr">Arrived</option>
-        </select>
-      </div>
-      <div>
-        <label for="train-search">Filter by train #:</label>
-        <input type="search" name="train-search">
-      </div>
+  <div class="flex flex-col items-center">
+    <div class="">
+      <select name="train-status-select" v-model="trains.trainStatus" class="my-2 p-2 bg-indigo-700 dark:bg-indigo-500 text-neutral-900 dark:text-neutral-200">
+        <option value="all">All</option>
+        <option value="dep">In Service</option>
+        <option value="sch">Scheduled</option>
+        <option value="arr">Arrived</option>
+      </select>
+    </div>
+    <div class="my-2 border border-neutral-700">
+      <label for="train-search" class="p-1">Search: </label>
+      <input v-model="trainSearch" type="search" name="train-search" class="bg-neutral-700 p-1">
     </div>
     <ul class="flex flex-col gap-1 overflow-scroll">
       <template v-for="(train, trainId) in trains.trainData" :key="trainId">
