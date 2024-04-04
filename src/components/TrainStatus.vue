@@ -44,10 +44,12 @@ onMounted(() => {
 </script>
 <template>
   <div>
-    <button @click="router.push('/')">&larr; Back to Trains</button>
-    <header>
-      <h1 class="text-3xl p-2 w-max border rounded-full">{{ trains.trainSelected }}</h1>
-    </header>
+    <div class="flex flex-col items-center">
+      <button @click="router.push('/')" class="p-2 border rounded-lg">&larr; Back to Trains</button>
+      <header>
+        <h1 class="text-3xl p-2">Train {{ trains.trainSelected }}</h1>
+      </header>
+    </div>
     <table class="w-full border text-center">
       <thead>
         <tr class="border">
@@ -65,7 +67,7 @@ onMounted(() => {
         </tr>
       </thead>
       <tbody class="divide-y">
-        <tr v-for="stop of trains.trainData[trains.trainSelected].times" class="even:bg-stone-950 odd:bg-stone-900 hover:bg-stone-800">
+        <tr v-for="stop of trains.trainData[trains.trainSelected].times" class="even:bg-stone-50 odd:bg-stone-200 hover:bg-stone-300 dark:even:bg-stone-950 dark:odd:bg-stone-900 dark:hover:bg-stone-800">
           <td class="py-2">{{ `${stop.station} (${stop.code})` }}</td>
           <td>{{ stop.eta }}</td>
           <td>{{ timeFormat(stop.arrival?.estimated) }}</td>

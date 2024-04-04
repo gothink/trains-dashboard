@@ -83,14 +83,14 @@ watch(trainSearch, (newSearch, oldSearch) => {
         <option value="arr">Arrived</option>
       </select>
     </div>
-    <div class="my-2 border border-neutral-700">
+    <div class="my-2 border border-neutral-700 dark:border-neutral-400">
       <label for="train-search" class="p-1">Search: </label>
-      <input v-model="trainSearch" type="search" name="train-search" class="bg-neutral-700 p-1">
+      <input v-model="trainSearch" type="search" name="train-search" class="bg-neutral-700 dark:bg-neutral-400 p-1">
     </div>
     <ul class="flex flex-col gap-1 overflow-scroll">
       <template v-for="(train, trainId) in trains.trainData" :key="trainId">
-        <li v-if="showTrain(trainId.toString())" @click="router.push(`/${trainId}`)" class="grid grid-cols-[1fr_5fr] sm:grid-cols-[2fr_5fr_5fr] gap-1 items-center bg-stone-900 p-2 border rounded-lg border-neutral-700 hover:border-neutral-400 cursor-pointer">
-          <div class="row-span-2 sm:row-auto self-stretch flex flex-col justify-center text-4xl text-center border-r border-slate-600">
+        <li v-if="showTrain(trainId.toString())" @click="router.push(`/${trainId}`)" class="grid grid-cols-[1fr_5fr] sm:grid-cols-[2fr_5fr_5fr] gap-1 items-center bg-stone-200 dark:bg-stone-900 p-2 border rounded-lg border-neutral-400 hover:border-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-400 cursor-pointer">
+          <div class="row-span-2 sm:row-auto self-stretch flex flex-col justify-center text-4xl text-center border-r border-neutral-400 dark:border-neutral-700">
             <span>{{ trainId }}</span>
           </div>
           <div class="flex items-center text-center text-lg md:text-xl lg:text-2xl">
@@ -106,9 +106,9 @@ watch(trainSearch, (newSearch, oldSearch) => {
           </div>
           <div class="col-start-2 sm:col-auto">
             <div v-if="trains.trainStatus === 'dep'" class="grid grid-cols-[1fr_2fr] items-end text-center text-sm">
-              <div class="text-slate-400 text-right">Next Stop:</div>
-              <div class="text-left sm:text-base ml-1">{{ train.times[nextStops[trainId]]?.station }} <span class="text-slate-400">in</span> {{ train.times[nextStops[trainId]]?.eta }}</div>
-              <div class="text-slate-400 text-right">Status:</div>
+              <div class="text-neutral-700 dark:text-neutral-400 text-right">Next Stop:</div>
+              <div class="text-left sm:text-base ml-1">{{ train.times[nextStops[trainId]]?.station }} <span class="text-neutral-400">in</span> {{ train.times[nextStops[trainId]]?.eta }}</div>
+              <div class="text-neutral-700 dark:text-neutral-400 text-right">Status:</div>
               <div class="text-left sm:text-base ml-1">{{ formatDelay(train.times[nextStops[trainId.toString()]]?.diffMin) }}</div>
             </div>
             <div v-else-if="trains.trainStatus === 'all'" class="text-center">

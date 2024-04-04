@@ -33,12 +33,14 @@ const timeFormat = (timeStr?: string) => {
 </script>
 <template>
   <div>
-    <button @click="trains.stationSelected = ''">&larr; Back to Train Stations</button>
-    <header>
-      <h1 class="text-3xl p-2 w-max">{{ `${currentStation?.[1]} (${currentStation?.[0]})` }}</h1>
-    </header>
+    <div class="flex flex-col items-center">
+      <button @click="trains.stationSelected = ''" class="p-2 border rounded-lg">&larr; Back to Train Stations</button>
+      <header>
+        <h1 class="text-3xl p-2">{{ `${currentStation?.[1]} (${currentStation?.[0]})` }}</h1>
+      </header>
+    </div>
     <table class="w-full border text-center">
-      <thead>
+      <thead class="sticky top-0 z-50">
         <tr class="border">
           <th class="border" rowspan="2">Train</th>
           <th class="border" rowspan="2">ETA</th>
@@ -54,7 +56,7 @@ const timeFormat = (timeStr?: string) => {
         </tr>
       </thead>
       <tbody class="divide-y">
-        <tr v-for="train in trainList" class="even:bg-stone-950 odd:bg-stone-900 hover:bg-stone-800">
+        <tr v-for="train in trainList" class="even:bg-stone-50 odd:bg-stone-200 hover:bg-stone-300 dark:even:bg-stone-950 dark:odd:bg-stone-900 dark:hover:bg-stone-800">
           <td class="py-2">{{ train[0] }}</td>
           <td>{{ trains.trainData[train[0]].times[train[1]].eta }}</td>
           <td>{{ timeFormat(trains.trainData[train[0]].times[train[1]].arrival?.estimated) }}</td>

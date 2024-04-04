@@ -23,12 +23,12 @@ const filteredStations = computed(() => {
 </script>
 <template>
   <div class="max-w-max mx-auto">
-    <div class="my-2 border border-neutral-700">
+    <div class="my-2 border border-neutral-400 dark:border-neutral-700">
       <label for="station-search" class="p-1">Search: </label>
-      <input v-model="stationSearch" type="search" name="station-search" class="bg-neutral-700 p-1">
+      <input v-model="stationSearch" type="search" name="station-search" class="bg-neutral-400 dark:bg-neutral-700 p-1">
     </div>
     <ul class="divide-y mx-auto text-center">
-      <li v-for="station in filteredStations" @click="router.push(`/stations/${station[0]}`)" class="py-2 bg-stone-900 hover:bg-stone-800 cursor-pointer">
+      <li v-for="station in filteredStations" @click="router.push(`/stations/${station[0]}`)" class="py-2 bg-stone-200 hover:bg-stone-300 dark:bg-stone-900 dark:hover:bg-stone-800 cursor-pointer">
         {{ `${station[1]} (${station[0]})` }}
       </li>
     </ul>
