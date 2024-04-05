@@ -68,10 +68,6 @@ const filteredTrains = computed(() => {
   return trainList;
 });
 
-watch(trainSearch, (newSearch, oldSearch) => {
-
-});
-
 </script>
 <template>
   <div class="flex flex-col items-center">
@@ -85,13 +81,13 @@ watch(trainSearch, (newSearch, oldSearch) => {
     </div>
     <div class="my-2 border border-neutral-700 dark:border-neutral-400">
       <label for="train-search" class="p-1">Search: </label>
-      <input v-model="trainSearch" type="search" name="train-search" class="bg-neutral-700 dark:bg-neutral-400 p-1">
+      <input v-model="trainSearch" type="search" name="train-search" id="train-search" class="bg-neutral-700 dark:bg-neutral-400 p-1">
     </div>
-    <ul class="flex flex-col gap-1 overflow-scroll">
+    <ul class="flex flex-col gap-1 overflow-auto">
       <template v-for="(train, trainId) in trains.trainData" :key="trainId">
         <li v-if="showTrain(trainId.toString())" @click="router.push(`/${trainId}`)" class="grid grid-cols-[1fr_5fr] sm:grid-cols-[2fr_5fr_5fr] gap-1 items-center bg-stone-200 dark:bg-stone-900 p-2 border rounded-lg border-neutral-400 hover:border-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-400 cursor-pointer">
           <div class="row-span-2 sm:row-auto self-stretch flex flex-col justify-center text-4xl text-center border-r border-neutral-400 dark:border-neutral-700">
-            <span>{{ trainId }}</span>
+            <span>{{ trainId.toString().split(' ')[0] }} <span class="text-xl">{{ trainId.toString().split(' ')[1] ?? '' }}</span></span>
           </div>
           <div class="flex items-center text-center text-lg md:text-xl lg:text-2xl">
             <div class="flex-1">

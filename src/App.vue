@@ -26,7 +26,7 @@ onMounted(async () => {
         {{ showMap ? '<< Hide' : '>> Show' }} Map
       </button>
     </div>
-    <div class="w-full lg:max-w-screen-lg overflow-scroll px-4">
+    <div class="w-full lg:max-w-screen-lg overflow-auto px-4">
       <ul class="flex flex-wrap justify-center text-center">
         <li class="p-4 w-1/2 border-neutral-700 dark:border-neutral-400" :class="route.name === 'trains' ? 'font-bold border-2 border-b-0' : 'border-b-2 bg-stone-200 dark:bg-stone-900 underline'">
           <RouterLink :to="`/${trains.trainSelected}`">Trains</RouterLink>
