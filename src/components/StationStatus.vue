@@ -46,7 +46,7 @@ const timeFormat = (timeStr?: string) => {
     </div>
     <table class="table-fixed sm:table-auto border-separate border-spacing-0 w-full sm:border text-center">
       <thead class="sticky top-0 bg-stone-50 dark:bg-stone-950">
-        <tr class="">
+        <tr>
           <th class="border border-l-0 sm:border-l" rowspan="2">Train</th>
           <th class="border" rowspan="2">ETA</th>
           <th class="border" colspan="2">Arrival</th>

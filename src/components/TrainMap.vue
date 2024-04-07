@@ -89,6 +89,7 @@ const updateMarker = (trainNumber: string, coords: [number, number]) => {
     if (trainMarkers.value[trainNumber]) {
       trainMarkers.value[trainNumber].setLatLng(coords);
       trainMarkers.value[trainNumber].setPopupContent(popUpContent(trainNumber));
+      trainMarkers.value[trainNumber].setIcon(L.divIcon({html: trainDivIcon(trainNumber), className: '', iconAnchor: [18,36], popupAnchor: [0,-36]}));
     } else {
       trainMarkers.value[trainNumber] = L.marker(coords, {icon: L.divIcon({html: trainDivIcon(trainNumber), className: '', iconAnchor: [18,36], popupAnchor: [0,-36]})})
       .addTo(toRaw(leafMap.value))
@@ -174,27 +175,49 @@ const updateMapView = ({ bounds = mapBounds.value, center = mapCenter.value } = 
   }
 };
 
-const updateStations = (stationList: string[]) => {
-  // clean up old markers
-  for (const statMarker in stationMarkers.value) {
-    stationMarkers.value[statMarker].remove();
-  }
-  stationMarkers.value = {};
-  
-  if (leafMap.value && stationList.length) {
-    for (const stationCode of stationList) {
-      if (trains.stationData[stationCode] && trains.stationData[stationCode].coords) {
-        stationMarkers.value[stationCode] = L.tooltip({ permanent: true, direction: 'bottom', offset: [0,4] })
-          .setLatLng(trains.stationData[stationCode].coords as [number, number])       
-          .setContent(`<p>${stationCode}</p><p>ETA: ${trains.trainData[trains.trainSelected].times.find(s => s.code === stationCode)?.eta}</p>`)   
-          .addTo(toRaw(leafMap.value));
+const handleStationMarkers = (stationList: string[]) => {
+  if (leafMap.value) {
+    if (stationList.length) {
+      for (const stationCode of stationList) {
+        if (trains.stationData[stationCode] && trains.stationData[stationCode].coords) {
+          stationMarkers.value[stationCode] = L.tooltip({ permanent: true, direction: 'bottom', offset: [0,4] })
+            .setLatLng(trains.stationData[stationCode].coords as [number, number])       
+            .setContent(`<p>${stationCode}</p><p>ETA: ${trains.trainData[trains.trainSelected].times.find(s => s.code === stationCode)?.eta}</p>`)   
+            .addTo(toRaw(leafMap.value));
+        }
       }
+    } else {
+      // clean up old markers
+      for (const statMarker in stationMarkers.value) {
+        toRaw(stationMarkers.value[statMarker]).remove();
+      }
+      stationMarkers.value = {};
+    }
+  }
+};
+
+const updateStationMarkers = (stationList: string[]) => {
+  if (leafMap.value) {
+    if (stationList.length) {
+      let newStations: string[] = [];
+      for (const stationCode of stationList) {
+        if (stationMarkers.value[stationCode]) {
+          stationMarkers.value[stationCode].setContent(`<p>${stationCode}</p><p>ETA: ${trains.trainData[trains.trainSelected].times.find(s => s.code === stationCode)?.eta}</p>`);
+        } else {
+          newStations.push(stationCode);
+        }
+      }
+      handleStationMarkers(newStations);
     }
   }
 };
 
 watch(() => trains.trainData, (newTrains) => {
   updateMap(false, newTrains);
+  // update station marker content
+  if (trains.trainSelected !== '') {
+    updateStationMarkers(trains.trainData[trains.trainSelected].times.map((s) => s.code));
+  }
 });
 
 watch(() => trains.trainSelected, (newTrain, oldTrain) => {
@@ -203,9 +226,9 @@ watch(() => trains.trainSelected, (newTrain, oldTrain) => {
     trainMarkers.value[newTrain].openPopup();
     let coords = getTrainCoords(newTrain);
     if (coords) mapCenter.value = [coords[0], coords[1]];
-    updateStations(trains.trainData[newTrain].times.map((s) => s.code));
+    handleStationMarkers(trains.trainData[newTrain].times.map((s) => s.code));
   } else {
-    updateStations([]);
+    handleStationMarkers([]);
     leafMap.value?.flyToBounds(L.latLngBounds(mapBounds.value));
   }
 }, { immediate: true });
