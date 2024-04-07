@@ -11,16 +11,18 @@ watch(props, (newProps) => {
   trains.stationSelected = newProps.stationCode ?? '';
 });
 
-onMounted(() => {
+onMounted(async () => {
+  await trains.getStationData();
+
   if (
     props.stationCode &&
-    trains.stationData.findIndex((stat) => stat[0] === props.stationCode) > -1
+    trains.stationData[props.stationCode.toUpperCase()]
   ) {
-    trains.stationSelected = props.stationCode;
+    trains.stationSelected = props.stationCode.toUpperCase();
   }
 });
 </script>
 <template>
   <StationList v-if="trains.stationSelected === ''" />
-  <StationStatus v-else :station-code="trains.stationSelected" />
+  <StationStatus v-else />
 </template>

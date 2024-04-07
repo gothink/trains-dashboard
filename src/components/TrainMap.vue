@@ -158,6 +158,10 @@ watch(() => trains.trainSelected, (newTrain, oldTrain) => {
   }
 }, { immediate: true });
 
+// watch(() => trains.stationSelected, (newStation, oldStation) => {
+  
+// });
+
 watch(() => mapCenter.value, (newCenter) => {
   // update map view
   updateMapView({ center: newCenter });

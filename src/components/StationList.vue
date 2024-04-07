@@ -11,12 +11,12 @@ const stationSearch = ref('');
 const filteredStations = computed(() => {
   if (stationSearch.value === '') return trains.stationData;
   
-  let stationList = [];
-  for (const station of trains.stationData) {
+  let stationList: typeof trains.stationData = {};
+  for (const stationCode in trains.stationData) {
     if (
-      station[0].toLowerCase().includes(stationSearch.value.toLowerCase()) ||
-      station[1].toLowerCase().includes(stationSearch.value.toLowerCase())
-    ) stationList.push(station);
+      stationCode.toLowerCase().includes(stationSearch.value.toLowerCase()) ||
+      trains.stationData[stationCode].name.toLowerCase().includes(stationSearch.value.toLowerCase())
+    ) stationList[stationCode] = trains.stationData[stationCode];
   }
   return stationList;
 });
@@ -28,8 +28,8 @@ const filteredStations = computed(() => {
       <input v-model="stationSearch" type="search" name="station-search" id="station-search" class="bg-neutral-400 dark:bg-neutral-700 p-1">
     </div>
     <ul class="divide-y mx-auto text-center">
-      <li v-for="station in filteredStations" @click="router.push(`/stations/${station[0]}`)" class="py-2 bg-stone-200 hover:bg-stone-300 dark:bg-stone-900 dark:hover:bg-stone-800 cursor-pointer">
-        {{ `${station[1]} (${station[0]})` }}
+      <li v-for="(station, stationCode) in filteredStations" @click="router.push(`/stations/${stationCode}`)" class="py-2 bg-stone-200 hover:bg-stone-300 dark:bg-stone-900 dark:hover:bg-stone-800 cursor-pointer">
+        {{ `${station.name} - ${stationCode}` }} {{ `(${station.count ?? '0'} train${station.count!==1 ? 's' : ''})` }}
       </li>
     </ul>
   </div>
