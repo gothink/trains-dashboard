@@ -10,7 +10,8 @@ const router = useRouter();
 const zoom = ref(10);
 const mapElem = ref<HTMLElement>();
 const leafMap = ref<L.Map>();
-const markers = ref<Record<string, L.Marker>>({});
+const trainMarkers = ref<Record<string, L.Marker>>({});
+const stationMarkers = ref<Record<string, L.Tooltip>>({});
 const mapBounds = ref<[[number, number], [number, number]]>([[45.5, -78.5], [44.5,-76.5]]);
 const mapCenter = ref<[number, number]>([45.5,-75.5]);
 const mapFollow = ref(true);
@@ -35,6 +36,36 @@ const popUpContent = (trainId: string) => {
   `;
 };
 
+const trainDivIcon = (trainId: string) => {
+  let dir = trains.trainData[trainId].direction;
+  dir = dir ? Math.floor(dir) : dir;
+  return `
+<svg height="36px" width="36px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 498.923 498.923" xml:space="preserve">
+  <path
+   style="fill:#000000"
+   d="M 249.462,0 C 151.018,0 70.951,80.106 70.951,178.511 c 0,92.436 133.617,192.453 172.248,315.948 0.83,2.667 3.322,4.484 6.116,4.465 2.804,-0.039 5.256,-1.876 6.048,-4.563 C 292.841,367.828 427.963,271.054 427.972,178.492 427.963,80.106 347.886,0 249.462,0 Z m 0,313.925 c -77.184,0 -139.987,-62.812 -139.987,-139.987 0,-77.184 62.803,-139.987 139.987,-139.987 77.165,0 139.977,62.803 139.977,139.987 0,77.175 -62.813,139.987 -139.977,139.987 z"
+   id="path2" />
+
+		<path
+   style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:51.447;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+   d="m 376.68238,501.57329 c -11.54516,-1.21568 -33.58177,-6.07169 -45.972,-10.13042 C 258.3208,467.72979 201.68316,407.13403 182.9976,333.40719 175.60111,304.22318 174.48828,263.79635 180.32036,236.14841 193.62818,173.06042 229.933,121.17618 284.2767,87.581462 338.02695,54.353615 408.37544,46.219652 469.40788,66.175886 c 16.53369,5.406141 45.48375,20.06793 60.00091,30.38752 15.7135,11.170004 41.89968,37.382424 52.90151,52.954474 29.6839,42.01479 43.99737,92.80772 40.68752,144.38421 -6.74522,105.10888 -87.50232,191.67802 -192.76946,206.64301 -11.80217,1.67782 -41.88976,2.25557 -53.54598,1.02819 z"
+   id="path2998"
+   transform="scale(0.62365375)" />
+   
+   <path
+   style="${dir ? 'display:none;' : ''}fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:8.02128;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+   d="m 245.78415,208.65137 c -1.80005,-0.18954 -5.23585,-0.94666 -7.16766,-1.57947 -11.28651,-3.69718 -20.11707,-13.14488 -23.0304,-24.63988 -1.15322,-4.55018 -1.32672,-10.85327 -0.41742,-15.16395 2.07487,-9.83627 7.73527,-17.92572 16.20819,-23.16359 8.38038,-5.18066 19.34866,-6.44886 28.86444,-3.33741 2.57782,0.84289 7.09152,3.12886 9.35494,4.73782 2.44995,1.74155 6.53273,5.82842 8.24806,8.25631 4.62812,6.55067 6.85978,14.46997 6.34373,22.51144 -1.05167,16.38789 -13.64279,29.88518 -30.05535,32.21842 -1.84011,0.2616 -6.53117,0.35168 -8.34853,0.16031 z"
+   id="path3273" />
+   
+   <path
+   id="path1004"
+   d="M 248.75885,67.153381 V 267.15338 m 0,-199.999999 -50,49.999999 m 50,-49.999999 50,49.999999"
+   style="${dir ? '' : 'display:none;'}fill:#010002;stroke:#000000;stroke-width:25;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
+   ${dir ? 'transform="rotate(' + dir + ', 250, 170)"' : ''} />
+</svg>
+  `;
+};
+
 const getTrainCoords = (trainId: string) => {
   let lat = trains.trainData[trainId].lat;
   let lng = trains.trainData[trainId].lng;
@@ -55,11 +86,11 @@ const markerHover = (e: L.LeafletEvent, trainId: string) => {
 
 const updateMarker = (trainNumber: string, coords: [number, number]) => {
   if (leafMap.value) {
-    if (markers.value[trainNumber]) {
-      markers.value[trainNumber].setLatLng(coords);
-      markers.value[trainNumber].setPopupContent(popUpContent(trainNumber));
+    if (trainMarkers.value[trainNumber]) {
+      trainMarkers.value[trainNumber].setLatLng(coords);
+      trainMarkers.value[trainNumber].setPopupContent(popUpContent(trainNumber));
     } else {
-      markers.value[trainNumber] = L.marker(coords)
+      trainMarkers.value[trainNumber] = L.marker(coords, {icon: L.divIcon({html: trainDivIcon(trainNumber), className: '', iconAnchor: [18,36], popupAnchor: [0,-36]})})
       .addTo(toRaw(leafMap.value))
       .bindPopup(
         popUpContent(trainNumber),
@@ -78,8 +109,8 @@ const updateMarker = (trainNumber: string, coords: [number, number]) => {
 const getTrainsInView = () => {
   if (leafMap.value) {
     let filterList: string[] = [];
-    for (const trainId in markers.value) {
-      if (leafMap.value.getBounds().contains(markers.value[trainId].getLatLng())) {
+    for (const trainId in trainMarkers.value) {
+      if (leafMap.value.getBounds().contains(trainMarkers.value[trainId].getLatLng())) {
         filterList.push(trainId);
       }
     }
@@ -107,9 +138,9 @@ const updateMap = (initMap?: boolean, trainData = trains.trainData) => {
           [Math.min(newBounds[0][0] ?? coords[0], coords[0]), Math.min(newBounds[0][1] ?? coords[1], coords[1])],
           [Math.max(newBounds[1][0] ?? coords[0], coords[0]), Math.max(newBounds[1][1] ?? coords[1], coords[1])],
         ];
-      } else if (markers.value[trainId]) {
-        markers.value[trainId].remove();
-        delete markers.value[trainId];
+      } else if (trainMarkers.value[trainId]) {
+        trainMarkers.value[trainId].remove();
+        delete trainMarkers.value[trainId];
       }
     }
   }
@@ -118,10 +149,10 @@ const updateMap = (initMap?: boolean, trainData = trains.trainData) => {
   if (initMap) leafMap.value?.fitBounds(L.latLngBounds(mapBounds.value));
 
   // remove stale markers
-  for (const trainId in markers.value) {
+  for (const trainId in trainMarkers.value) {
     if (!(trainId in trainData)) {
-      markers.value[trainId].remove();
-      delete markers.value[trainId];
+      trainMarkers.value[trainId].remove();
+      delete trainMarkers.value[trainId];
     }
   }
 };
@@ -143,23 +174,49 @@ const updateMapView = ({ bounds = mapBounds.value, center = mapCenter.value } = 
   }
 };
 
+const updateStations = (stationList: string[]) => {
+  // clean up old markers
+  for (const statMarker in stationMarkers.value) {
+    stationMarkers.value[statMarker].remove();
+  }
+  stationMarkers.value = {};
+  
+  if (leafMap.value && stationList.length) {
+    for (const stationCode of stationList) {
+      if (trains.stationData[stationCode] && trains.stationData[stationCode].coords) {
+        stationMarkers.value[stationCode] = L.tooltip({ permanent: true, direction: 'bottom', offset: [0,4] })
+          .setLatLng(trains.stationData[stationCode].coords as [number, number])       
+          .setContent(`<p>${stationCode}</p><p>ETA: ${trains.trainData[trains.trainSelected].times.find(s => s.code === stationCode)?.eta}</p>`)   
+          .addTo(toRaw(leafMap.value));
+      }
+    }
+  }
+};
+
 watch(() => trains.trainData, (newTrains) => {
   updateMap(false, newTrains);
 });
 
 watch(() => trains.trainSelected, (newTrain, oldTrain) => {
-  if (oldTrain) markers.value[oldTrain].closePopup();
+  if (oldTrain) trainMarkers.value[oldTrain].closePopup();
   if (newTrain !== '') {
-    markers.value[newTrain].openPopup();
+    trainMarkers.value[newTrain].openPopup();
     let coords = getTrainCoords(newTrain);
     if (coords) mapCenter.value = [coords[0], coords[1]];
+    updateStations(trains.trainData[newTrain].times.map((s) => s.code));
   } else {
+    updateStations([]);
     leafMap.value?.flyToBounds(L.latLngBounds(mapBounds.value));
   }
 }, { immediate: true });
 
 // watch(() => trains.stationSelected, (newStation, oldStation) => {
-  
+//   if (leafMap.value && newStation !== '') {
+//     stationMarkers.value[newStation] = L.popup()
+//       .setLatLng(trains.stationData[newStation].coords ?? [0,0])
+//       .setContent(`<p class="bg-blue-800 dark:bg-blue-600">${newStation}</p>`)
+//       .openOn(toRaw(leafMap.value));
+//   }
 // });
 
 watch(() => mapCenter.value, (newCenter) => {

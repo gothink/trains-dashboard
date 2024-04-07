@@ -4,7 +4,7 @@ import type { TrainInfoObject } from "@/util/types";
 
 interface StationData {
   name: string;
-  coords: [number, number];
+  coords?: [number, number];
   count?: number;
 }
 

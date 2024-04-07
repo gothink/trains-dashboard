@@ -13,6 +13,7 @@ const showMap = ref(true);
 onMounted(async () => {
   await trains.getTrainData();
   initialized.value = true;
+  await trains.getStationData();
   setInterval(trains.getTrainData, 60 * 1000);
 });
 </script>

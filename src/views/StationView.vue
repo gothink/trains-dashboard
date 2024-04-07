@@ -12,8 +12,6 @@ watch(props, (newProps) => {
 });
 
 onMounted(async () => {
-  await trains.getStationData();
-
   if (
     props.stationCode &&
     trains.stationData[props.stationCode.toUpperCase()]
