@@ -87,7 +87,7 @@ const getTrainsInView = () => {
   }
 };
 
-const updateMap = (trainData = trains.trainData): Promise<void> => new Promise((resolve) => {
+const updateMap = (initMap?: boolean, trainData = trains.trainData) => {
   let newBounds: number[][] = [[],[]];
 
   for (const trainId in trainData) {
@@ -108,25 +108,43 @@ const updateMap = (trainData = trains.trainData): Promise<void> => new Promise((
           [Math.max(newBounds[1][0] ?? coords[0], coords[0]), Math.max(newBounds[1][1] ?? coords[1], coords[1])],
         ];
       } else if (markers.value[trainId]) {
+        markers.value[trainId].remove();
         delete markers.value[trainId];
       }
     }
   }
 
   mapBounds.value = [[newBounds[0][0], newBounds[0][1]], [newBounds[1][0], newBounds[1][1]]];
+  if (initMap) leafMap.value?.fitBounds(L.latLngBounds(mapBounds.value));
 
   // remove stale markers
   for (const trainId in markers.value) {
     if (!(trainId in trainData)) {
+      markers.value[trainId].remove();
       delete markers.value[trainId];
     }
   }
+};
 
-  resolve();
-});
+const updateMapView = ({ bounds = mapBounds.value, center = mapCenter.value } = {}) => {
+  if (leafMap.value && mapFollow.value) {
+    if (trains.trainSelected !== '') {
+      if (
+        leafMap.value.getBounds().contains(center) &&
+        leafMap.value.getZoom() >= zoom.value
+      ) {
+        leafMap.value.panTo(center);
+      } else {
+        leafMap.value.flyTo(center, zoom.value);
+      }
+    } else {
+      leafMap.value.flyToBounds(L.latLngBounds(bounds));
+    }
+  }
+};
 
-watch(() => trains.trainData, async (newTrains) => {
-  await updateMap(newTrains);
+watch(() => trains.trainData, (newTrains) => {
+  updateMap(false, newTrains);
 });
 
 watch(() => trains.trainSelected, (newTrain, oldTrain) => {
@@ -135,30 +153,17 @@ watch(() => trains.trainSelected, (newTrain, oldTrain) => {
     markers.value[newTrain].openPopup();
     let coords = getTrainCoords(newTrain);
     if (coords) mapCenter.value = [coords[0], coords[1]];
-  } else if (oldTrain !== '') {
+  } else {
     leafMap.value?.flyToBounds(L.latLngBounds(mapBounds.value));
   }
-});
+}, { immediate: true });
 
 watch(() => mapCenter.value, (newCenter) => {
   // update map view
-  if (
-    leafMap.value &&
-    mapFollow.value &&
-    trains.trainSelected !== ''
-  ) {
-    if (
-      leafMap.value.getBounds().contains(newCenter) &&
-      leafMap.value.getZoom() >= zoom.value
-    ) {
-      leafMap.value.panTo(newCenter);
-    } else {
-      leafMap.value.flyTo(newCenter, zoom.value);
-    }
-  }
+  updateMapView({ center: newCenter });
 });
 
-onMounted(async () => {
+onMounted(() => {
   if (mapElem.value) {
     const OSMBaseMap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -173,25 +178,21 @@ onMounted(async () => {
     leafMap.value = L.map(mapElem.value, {
       closePopupOnClick: false,
       layers: [OSMBaseMap, OSMRailMap],
-    }).setView([63.47, -96.06], 4);
+    });
 
     leafMap.value.on('moveend', getTrainsInView);
     leafMap.value.on('zoomend', getTrainsInView);
+    leafMap.value.on('resize', () => { updateMapView() });
 
-    await updateMap();
-
-    if (trains.trainSelected === '') {
-      leafMap.value.fitBounds(L.latLngBounds(mapBounds.value));
-    } else if (markers.value[trains.trainSelected]) {
-      markers.value[trains.trainSelected].openPopup();
-    }
+    updateMap(true);
   }
 });
 
 onUnmounted(() => {
-  trains.filteredTrains = [];
+  leafMap.value?.remove();
+  trains.filteredTrains = Object.keys(trains.trainData);
 });
 </script>
 <template>
-  <div id="mapElem" ref="mapElem" class=" h-5/6"></div>
+  <div id="mapElem" ref="mapElem" class="h-full"></div>
 </template>

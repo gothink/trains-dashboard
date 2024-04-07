@@ -20,11 +20,15 @@ onMounted(async () => {
 
 <template>
   <main v-if="initialized" class="flex flex-col lg:flex-row h-screen overflow-hidden">
-    <div class="flex-none h-[50vh] w-full lg:w-[50vw] lg:h-screen">
-      <TrainMap v-show="showMap" />
-      <button class="my-1 mx-auto px-2 rounded-sm bg-indigo-700 dark:bg-indigo-500" @click="showMap = !showMap">
-        {{ showMap ? '<< Hide' : '>> Show' }} Map
-      </button>
+    <div class="w-full lg:h-screen flex flex-col" :class="showMap ? 'flex-none h-[50vh] lg:w-[50vw]' : 'h-fit lg:w-fit'">
+      <div class="flex-grow">
+        <TrainMap v-if="showMap" />
+      </div>
+      <div class="flex-none">
+        <button class="my-1 mx-auto px-2 rounded-sm bg-indigo-700 dark:bg-indigo-500" @click="showMap = !showMap">
+          {{ showMap ? '<< Hide' : '>> Show' }} Map
+        </button>
+      </div>
     </div>
     <div class="w-full lg:max-w-screen-lg overflow-auto px-4">
       <ul class="flex flex-wrap justify-center text-center">
