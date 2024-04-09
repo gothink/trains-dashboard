@@ -14,7 +14,7 @@ onMounted(async () => {
   await trains.getTrainData();
   initialized.value = true;
   await trains.getStationData();
-  setInterval(trains.getTrainData, 60 * 1000);
+  setInterval(trains.getTrainData, 40 * 1000);
 });
 </script>
 

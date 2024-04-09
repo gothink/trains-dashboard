@@ -3,19 +3,21 @@ import { onMounted, onUnmounted, ref, toRaw, watch } from 'vue';
 import L from 'leaflet';
 import { useTrainsStore } from '@/stores/trainsStore';
 import { useRouter } from 'vue-router';
-import StationCard from './StationCard.vue';
 
 const trains = useTrainsStore();
 const router = useRouter();
 
-const zoom = ref(10);
+const TRAIN_ZOOM = 10;
+
+type MapCoord = [number, number];
+type MapBoundary = [MapCoord, MapCoord];
+
+// const zoom = ref(10);
 const mapElem = ref<HTMLElement>();
 const leafMap = ref<L.Map>();
 const trainMarkers = ref<Record<string, L.Marker>>({});
 const stationMarkers = ref<Record<string, L.Tooltip>>({});
-const stationIcons = ref<HTMLElement>();
-const mapBounds = ref<[[number, number], [number, number]]>([[45.5, -78.5], [44.5,-76.5]]);
-const mapCenter = ref<[number, number]>([45.5,-75.5]);
+const mapBounds = ref<[MapCoord, MapCoord]>();
 const mapFollow = ref(true);
 
 const popUpContent = (trainId: string) => {
@@ -81,6 +83,8 @@ const trainDivIcon = (trainId: string) => {
   `;
 };
 
+// -- Utility functions --
+
 const getTrainCoords = (trainId: string): [number, number] | undefined => {
   let lat = trains.trainData[trainId].lat;
   let lng = trains.trainData[trainId].lng;
@@ -89,6 +93,8 @@ const getTrainCoords = (trainId: string): [number, number] | undefined => {
   }
 };
 
+// -- Trains markers, icons and overlays --
+
 const markerHover = (e: L.LeafletEvent, trainId: string) => {
   if (trainId !== trains.trainSelected) {
     if (e.type === 'mouseover') {
@@ -96,6 +102,22 @@ const markerHover = (e: L.LeafletEvent, trainId: string) => {
     } else if (e.type === 'mouseout') {
       e.target.closePopup();
     }
+  }
+};
+
+const filterTrainsInView = () => {
+  console.log('filtering...');
+  if (leafMap.value) {
+    let filterList: string[] = [];
+    let currentBounds = leafMap.value.getBounds();
+    let currentCoord: MapCoord | undefined;
+    for (const trainId in trainMarkers.value) {
+      currentCoord = getTrainCoords(trainId);
+      if (currentCoord && currentBounds.contains(currentCoord)) {
+        filterList.push(trainId);
+      }
+    }
+    trains.filteredTrains = filterList;
   }
 };
 
@@ -122,73 +144,7 @@ const updateMarker = (trainNumber: string, coords: [number, number]) => {
   }
 };
 
-const getTrainsInView = () => {
-  if (leafMap.value) {
-    let filterList: string[] = [];
-    for (const trainId in trainMarkers.value) {
-      if (leafMap.value.getBounds().contains(trainMarkers.value[trainId].getLatLng())) {
-        filterList.push(trainId);
-      }
-    }
-    trains.filteredTrains = filterList;
-  }
-};
-
-const updateMap = (initMap?: boolean, trainData = trains.trainData) => {
-  let newBounds: [[number,number],[number,number]] = mapBounds.value;
-  let newCenter: [number,number] | undefined;
-
-  for (const trainId in trainData) {
-    if (trainData[trainId].departed && !trainData[trainId].arrived) {
-      let coords = getTrainCoords(trainId);
-      if (coords) {
-        // update markers
-        updateMarker(trainId, coords);
-
-        // update center of map
-        if (trains.trainSelected === trainId) {
-          mapCenter.value = coords;
-        }
-
-        // update map bounds
-        newBounds = [
-          [Math.min(newBounds[0][0] ?? coords[0], coords[0]), Math.min(newBounds[0][1] ?? coords[1], coords[1])],
-          [Math.max(newBounds[1][0] ?? coords[0], coords[0]), Math.max(newBounds[1][1] ?? coords[1], coords[1])],
-        ];
-      } else if (trainMarkers.value[trainId]) {
-        trainMarkers.value[trainId].remove();
-        delete trainMarkers.value[trainId];
-      }
-    }
-  }
-  if (initMap && leafMap.value) leafMap.value.setView(mapCenter.value);
-  updateMapView({ bounds: newBounds, center: mapCenter.value });
-
-  // remove stale markers
-  for (const trainId in trainMarkers.value) {
-    if (!(trainId in trainData)) {
-      trainMarkers.value[trainId].remove();
-      delete trainMarkers.value[trainId];
-    }
-  }
-};
-
-const updateMapView = ({ bounds = mapBounds.value, center = mapCenter.value } = {}) => {
-  if (leafMap.value && mapFollow.value) {
-    if (trains.trainSelected !== '') {
-      if (
-        leafMap.value.getBounds().contains(center) &&
-        leafMap.value.getZoom() >= zoom.value
-      ) {
-        leafMap.value.panTo(center);
-      } else {
-        leafMap.value.flyTo(center, zoom.value);
-      }
-    } else {
-      leafMap.value.flyToBounds(L.latLngBounds(bounds));
-    }
-  }
-};
+// -- Station markers, icons and overlays --
 
 const handleStationMarkers = (stationList: string[], cleanUp = true) => {
   if (leafMap.value) {
@@ -202,10 +158,9 @@ const handleStationMarkers = (stationList: string[], cleanUp = true) => {
 
     if (stationList.length) {
       for (const stationCode of stationList) {
-        if (trains.stationData[stationCode] && trains.stationData[stationCode].coords && stationIcons.value) {
+        if (trains.stationData[stationCode] && trains.stationData[stationCode].coords) {
           stationMarkers.value[stationCode] = L.tooltip({ permanent: true, direction: 'bottom', offset: [0,4], className: 'custom-tooltip' })
             .setLatLng(trains.stationData[stationCode].coords as [number, number])       
-            // .setContent()   
             .setContent(stationMarkerContent(stationCode))   
             .addTo(toRaw(leafMap.value));
         }
@@ -230,6 +185,91 @@ const updateStationMarkers = (stationList: string[]) => {
   }
 };
 
+// -- Leaflet map coordinates, boundaries, movement --
+
+const initMapView = (newBounds?: MapBoundary) => {
+  if (leafMap.value) {
+    if (trains.trainSelected !== '') {
+      let center = getTrainCoords(trains.trainSelected);
+      if (center) leafMap.value.setView(center, TRAIN_ZOOM);
+      // TODO: get boundary for train's station stops if no coords avail
+      else leafMap.value.setView([62.4, -96.46], 6);
+    } else if (newBounds) {
+      leafMap.value.fitBounds(newBounds);
+    }
+    else {
+      leafMap.value.setView([62.4, -96.46], 6);
+    }
+  }
+};
+
+const updateMapView = ({ center, reset }: { center?: MapCoord, reset?: boolean } = {}) => {
+  if (leafMap.value && mapFollow.value) {
+    // stash current boundary to compare for triggering filter update
+    const currentBounds = leafMap.value.getBounds();
+
+    if (trains.trainSelected !== '') {
+      center ??= getTrainCoords(trains.trainSelected);
+      if (center) {
+        if (leafMap.value.getBounds().contains(center) && leafMap.value.getZoom() >= TRAIN_ZOOM) {
+          leafMap.value.panTo(center);
+        } else {
+          leafMap.value.flyTo(center, TRAIN_ZOOM);
+        }
+      }
+    } else if (reset && mapBounds.value) {
+      leafMap.value.flyToBounds(L.latLngBounds(mapBounds.value));
+    }
+
+    // boundary hasn't changed, trigger event
+    if (leafMap.value.getBounds().equals(currentBounds)) {
+      filterTrainsInView();
+    }
+  }
+};
+
+const updateMap = (initMap?: boolean, trainData = trains.trainData) => {
+  let newBounds: MapBoundary | undefined;
+
+  for (const trainId in trainData) {
+    if (trainData[trainId].departed && !trainData[trainId].arrived) {
+      let coords = getTrainCoords(trainId);
+      if (coords) {
+        // update markers
+        updateMarker(trainId, coords);
+
+        // update map bounds
+        if (!newBounds) {
+          newBounds = [coords, coords];
+        } else {
+          newBounds = [
+            [Math.min(newBounds[0][0], coords[0]), Math.min(newBounds[0][1], coords[1])],
+            [Math.max(newBounds[1][0], coords[0]), Math.max(newBounds[1][1], coords[1])],
+          ];
+        }
+      } else if (trainMarkers.value[trainId]) {
+        trainMarkers.value[trainId].remove();
+        delete trainMarkers.value[trainId];
+      }
+    }
+  }
+
+  if (newBounds) mapBounds.value = newBounds;
+  
+  if (initMap) initMapView(newBounds);
+  else updateMapView();
+
+  // remove stale markers
+  for (const trainId in trainMarkers.value) {
+    if (!(trainId in trainData)) {
+      trainMarkers.value[trainId].remove();
+      delete trainMarkers.value[trainId];
+    }
+  }
+};
+
+// -- Train store watchers
+
 watch(() => trains.trainData, (newTrains) => {
   updateMap(false, newTrains);
   // update station marker content
@@ -244,23 +284,18 @@ watch(() => trains.trainSelected, (newTrain, oldTrain) => {
     if (newTrain !== '') {
       let coords = getTrainCoords(newTrain);
       if (coords) {
-        mapCenter.value = coords;
         updateMapView({ center: coords });
         trainMarkers.value[newTrain]?.openPopup();
       }
       handleStationMarkers(trains.trainData[newTrain].times.map((s) => s.code));
     } else {
       handleStationMarkers([]);
-      updateMapView();
-      // leafMap.value.flyToBounds(L.latLngBounds(mapBounds.value));
+      updateMapView({ reset: true });
     }
   }
-}, { immediate: true });
+});
 
-// watch(() => mapCenter.value, (newCenter) => {
-//   // update map view
-//   updateMapView({ center: newCenter });
-// });
+// -- Setup and cleanup --
 
 onMounted(() => {
   if (mapElem.value) {
@@ -279,22 +314,19 @@ onMounted(() => {
       layers: [OSMBaseMap, OSMRailMap],
     });
 
-    leafMap.value.on('moveend', getTrainsInView);
-    leafMap.value.on('zoomend', getTrainsInView);
-    leafMap.value.on('resize', () => { updateMapView() });
+    leafMap.value.on('moveend', () => filterTrainsInView());
+    leafMap.value.on('resize', () => { updateMapView({ reset: true }) });
 
     updateMap(true);
   }
 });
 
 onUnmounted(() => {
-  leafMap.value?.remove();
-  trains.filteredTrains = Object.keys(trains.trainData);
+  toRaw(leafMap.value)?.remove();
 });
 </script>
 <template>
   <div id="mapElem" ref="mapElem" class="h-full"></div>
-  <StationCard ref="stationIcons" station-code="KGON" />
 </template>
 <style>
 .custom-tooltip {
