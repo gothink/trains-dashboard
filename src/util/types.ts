@@ -29,10 +29,10 @@ export interface TrainInfo {
   direction?: number;
   poll?: string;
   pollMin?: number;
+  next?: number;
 }
 
-export interface TrainInfoObject {
-  [index: string]: TrainInfo;
-}
+export type MapCoord = [number, number];
+export type MapBoundary = [MapCoord, MapCoord];
 
 export type TrainStatus = 'arr' | 'dep' | 'sch';

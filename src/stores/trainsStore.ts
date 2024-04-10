@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
-import type { TrainInfoObject } from "@/util/types";
+import { ref, shallowRef } from "vue";
+import type { MapBoundary, MapCoord, TrainInfo } from "@/util/types";
 
 interface StationData {
   name: string;
@@ -8,18 +8,86 @@ interface StationData {
   count?: number;
 }
 
+type TrainsObject = Record<string, TrainInfo>;
+type ActiveTrainsObject = Record<string, TrainInfo & Required<Pick<TrainInfo, "lat" | "lng">>>;
+
 export const useTrainsStore = defineStore('trains', () => {
-  const trainData = ref<TrainInfoObject>({});
+  const trainData = shallowRef<TrainsObject>({});
+  const trainList = shallowRef<{
+    active: ActiveTrainsObject;
+    departed: TrainsObject;
+    arrived: TrainsObject;
+    scheduled: TrainsObject;
+  }>({
+    active: {},
+    departed: {},
+    arrived: {},
+    scheduled: {},
+  });
   const filteredTrains = ref<string[]>([]);
   const trainSelected = ref('');
   const trainStatus = ref('dep');
   const stationSelected = ref('');
-  const stationData = ref<Record<string, StationData>>({});
+  const stationData = shallowRef<Record<string, StationData>>({});
+  const mapBounds = ref<MapBoundary>();
 
   const getTrainData = async () => {
     const response = await fetch('/api/trains');
-    if (response.ok) trainData.value = await response.json();
-  };
+    if (response.ok) {
+      let trains: TrainsObject = await response.json();
+      if (trains) {
+        let active: ActiveTrainsObject = {};
+        let departed: TrainsObject = {};
+        let scheduled: TrainsObject = {};
+        let arrived: TrainsObject = {};
+        let coords: MapCoord;
+        let bounds: MapBoundary | null = null;
+
+        Object.entries(trains).forEach(([trainId, train]) => {
+          // populate trainList
+          if (train.departed) {
+            if (train.arrived) {
+              arrived[trainId] = train;
+            } else {
+              // add next stop
+              train.next = train.times.findIndex(
+                (station) => station.eta !== "ARR"
+              );
+              
+              departed[trainId] = train;
+
+              // has coordinates?
+              if (train.lat && train.lng) {
+                active[trainId] = { ...train, lat: train.lat, lng: train.lng };
+
+                // update map bounds
+                coords = [train.lat, train.lng];
+                if (!bounds) {
+                  bounds = [coords, coords];
+                } else {
+                  bounds = [
+                    [
+                      Math.min(bounds[0][0], coords[0]),
+                      Math.min(bounds[0][1], coords[1]),
+                    ],
+                    [
+                      Math.max(bounds[1][0], coords[0]),
+                      Math.max(bounds[1][1], coords[1]),
+                    ],
+                  ];
+                }
+              }
+            }
+          } else {
+            scheduled[trainId] = train;
+          }
+        });
+
+        trainList.value = { active, departed, arrived, scheduled };
+        if (bounds) mapBounds.value = bounds;
+      }
+    }
+  }
 
   const getStationData = async () => {
     const response = await fetch('/api/stations');

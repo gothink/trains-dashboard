@@ -9,6 +9,7 @@ const route = useRoute();
 
 const initialized = ref(false);
 const showMap = ref(true);
+const mapElem = ref<HTMLElement>();
 
 onMounted(async () => {
   await trains.getTrainData();
@@ -22,7 +23,8 @@ onMounted(async () => {
   <main v-if="initialized" class="flex flex-col lg:flex-row h-screen overflow-hidden">
     <div class="w-full lg:h-screen flex flex-col" :class="showMap ? 'flex-none h-[50vh] lg:w-[50vw]' : 'h-fit lg:w-fit'">
       <div class="flex-grow">
-        <TrainMap v-if="showMap" />
+        <div id="map-div" ref="mapElem" class="h-full"></div>
+        <TrainMap v-if="showMap && mapElem" map-element="map-div" />
       </div>
       <div class="flex-none">
         <button class="my-1 mx-auto px-2 rounded-sm bg-indigo-700 dark:bg-indigo-500" @click="showMap = !showMap">
