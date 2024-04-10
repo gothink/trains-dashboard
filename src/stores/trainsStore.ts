@@ -1,10 +1,10 @@
 import { defineStore } from "pinia";
 import { ref, shallowRef } from "vue";
-import type { MapBoundary, MapCoord, TrainInfo } from "@/util/types";
+import type { MapBoundary, MapCoord, TrainInfo, TrainStatus } from "@/util/types";
 
 interface StationData {
   name: string;
-  coords?: [number, number];
+  coords?: MapCoord;
   count?: number;
 }
 
@@ -26,7 +26,7 @@ export const useTrainsStore = defineStore('trains', () => {
   });
   const filteredTrains = ref<string[]>([]);
   const trainSelected = ref('');
-  const trainStatus = ref('dep');
+  const trainStatus = ref<TrainStatus>('departed');
   const stationSelected = ref('');
   const stationData = shallowRef<Record<string, StationData>>({});
   const mapBounds = ref<MapBoundary>();
@@ -53,7 +53,7 @@ export const useTrainsStore = defineStore('trains', () => {
               train.next = train.times.findIndex(
                 (station) => station.eta !== "ARR"
               );
-              
+
               departed[trainId] = train;
 
               // has coordinates?
@@ -115,6 +115,7 @@ export const useTrainsStore = defineStore('trains', () => {
 
   return {
     trainData,
+    trainList,
     trainSelected,
     filteredTrains,
     trainStatus,
@@ -122,5 +123,6 @@ export const useTrainsStore = defineStore('trains', () => {
     stationData,
     stationSelected,
     getStationData,
+    mapBounds,
   };
 });
