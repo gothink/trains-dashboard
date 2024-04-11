@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
-import { ref, shallowRef } from "vue";
+import { computed, ref, shallowRef } from "vue";
+import { useUserStore } from "./userStore";
 import type { MapBoundary, MapCoord, TrainInfo, TrainStatus } from "@/util/types";
 
 interface StationData {
@@ -12,85 +13,74 @@ type TrainsObject = Record<string, TrainInfo>;
 type ActiveTrainsObject = Record<string, TrainInfo & Required<Pick<TrainInfo, "lat" | "lng">>>;
 
 export const useTrainsStore = defineStore('trains', () => {
+  const user = useUserStore();
   const trainData = shallowRef<TrainsObject>({});
-  const trainList = shallowRef<{
-    active: ActiveTrainsObject;
-    departed: TrainsObject;
-    arrived: TrainsObject;
-    scheduled: TrainsObject;
-  }>({
-    active: {},
-    departed: {},
-    arrived: {},
-    scheduled: {},
-  });
-  const filteredTrains = ref<string[]>([]);
-  const trainSelected = ref('');
-  const trainStatus = ref<TrainStatus>('departed');
-  const stationSelected = ref('');
+  const trainsActive = shallowRef<ActiveTrainsObject>({});
+  const trainsInView = ref<string[]>([]);
+  const trainSelected = ref("");
+  const trainStatus = ref<TrainStatus>("departed");
+  const stationSelected = ref("");
   const stationData = shallowRef<Record<string, StationData>>({});
-  const mapBounds = ref<MapBoundary>();
+  let refreshIntervalRef: number;
+  
+  const mapBounds = computed(() => {
+    let bounds: MapBoundary | null = null;
+    for (const trainId in trainsActive.value) {
+      if (!bounds) {
+        bounds = [
+          [trainsActive.value[trainId].lat, trainsActive.value[trainId].lng],
+          [trainsActive.value[trainId].lat, trainsActive.value[trainId].lng],
+        ];
+      } else {
+        bounds = [
+          [
+            Math.min(bounds[0][0], trainsActive.value[trainId].lat),
+            Math.min(bounds[0][1], trainsActive.value[trainId].lng),
+          ],
+          [
+            Math.max(bounds[1][0], trainsActive.value[trainId].lat),
+            Math.max(bounds[1][1], trainsActive.value[trainId].lng),
+          ],
+        ];
+      }
+    }
+    return bounds;
+  });
 
   const getTrainData = async () => {
-    const response = await fetch('/api/trains');
-    if (response.ok) {
-      let trains: TrainsObject = await response.json();
-      if (trains) {
-        let active: ActiveTrainsObject = {};
-        let departed: TrainsObject = {};
-        let scheduled: TrainsObject = {};
-        let arrived: TrainsObject = {};
-        let coords: MapCoord;
-        let bounds: MapBoundary | null = null;
+    try {
+      const response = await fetch("/api/trains");
+      if (response.ok) {
+        let trains: TrainsObject = await response.json();
 
-        Object.entries(trains).forEach(([trainId, train]) => {
-          // populate trainList
-          if (train.departed) {
-            if (train.arrived) {
-              arrived[trainId] = train;
-            } else {
-              // add next stop
+        if (trains) {
+          let active: ActiveTrainsObject = {};
+          Object.entries(trains).forEach(([trainId, train]) => {
+            if (train.departed && !train.arrived) {
               train.next = train.times.findIndex(
                 (station) => station.eta !== "ARR"
               );
 
-              departed[trainId] = train;
-
-              // has coordinates?
               if (train.lat && train.lng) {
-                active[trainId] = { ...train, lat: train.lat, lng: train.lng };
-
-                // update map bounds
-                coords = [train.lat, train.lng];
-                if (!bounds) {
-                  bounds = [coords, coords];
-                } else {
-                  bounds = [
-                    [
-                      Math.min(bounds[0][0], coords[0]),
-                      Math.min(bounds[0][1], coords[1]),
-                    ],
-                    [
-                      Math.max(bounds[1][0], coords[0]),
-                      Math.max(bounds[1][1], coords[1]),
-                    ],
-                  ];
-                }
+                active[trainId] = {
+                  lat: train.lat,
+                  lng: train.lng,
+                  ...train,
+                };
               }
             }
-          } else {
-            scheduled[trainId] = train;
-          }
-        });
-
-        trainList.value = { active, departed, arrived, scheduled };
-        if (bounds) mapBounds.value = bounds;
+          });
+          trainsActive.value = active;
+          trainData.value = trains;
+        }
       }
+    } catch (err) {
+      console.log(err);
     }
-  }
+  };
 
   const getStationData = async () => {
-    const response = await fetch('/api/stations');
+    const response = await fetch("/api/stations");
     if (response.ok) {
       let { stations, error } = await response.json();
       if (error) {
@@ -100,11 +90,11 @@ export const useTrainsStore = defineStore('trains', () => {
         // count trains for each station with scheduled trains
         for (const trainId in trainData.value) {
           for (const stationStop of trainData.value[trainId].times) {
-            if (!stations[stationStop.code]) {              
+            if (!stations[stationStop.code]) {
               stations[stationStop.code] = { name: stationStop.station };
             }
             stations[stationStop.code].count ??= 0;
-            stations[stationStop.code].count++;              
+            stations[stationStop.code].count++;
           }
         }
 
@@ -113,16 +103,24 @@ export const useTrainsStore = defineStore('trains', () => {
     }
   };
 
+  const initApp = async () => {
+    user.initSettings();
+    await getTrainData();
+    await getStationData();
+    if (user.settings.autoRefresh) {
+      refreshIntervalRef = setInterval(() => getTrainData(), user.settings.refreshInterval * 1000);
+    }
+  };
+
   return {
     trainData,
-    trainList,
+    trainsActive,
     trainSelected,
-    filteredTrains,
+    trainsInView,
     trainStatus,
-    getTrainData,
     stationData,
     stationSelected,
-    getStationData,
     mapBounds,
+    initApp,
   };
 });

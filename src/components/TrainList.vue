@@ -1,12 +1,24 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, shallowReactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTrainsStore } from '@/stores/trainsStore';
+import { useUserStore } from '@/stores/userStore';
 
 const trains = useTrainsStore();
 const router = useRouter();
+const user = useUserStore();
 
 const trainSearch = ref('');
+
+const trainList = shallowReactive<{
+  'departed': typeof trains.trainData,
+  'arrived': typeof trains.trainData,
+  'scheduled': typeof trains.trainData,
+}>({
+  arrived: {},
+  departed: {},
+  scheduled: {},
+});
 
 const formatDelay = (delay: number) => {
   if (delay > 0) {
@@ -18,28 +30,51 @@ const formatDelay = (delay: number) => {
   }
 };
 
-//TODO: fix filtering
-
 const filteredTrains = computed(() => {
-  if (trainSearch.value === '') {
-    return Object.keys(trains.trainList[trains.trainStatus]);
+  let trainFilt: typeof trains.trainData;
+
+  // filter by train status
+  if (trains.trainStatus === 'departed') {
+    if (user.settings.showInactiveTrains) trainFilt = { ...trainList.departed };
+    else trainFilt = { ...trains.trainsActive };
+  } else if (trains.trainStatus === 'arrived') {
+    trainFilt = { ...trainList.arrived };
+  } else if (trains.trainStatus === 'scheduled') {
+    trainFilt = { ...trainList.scheduled };
+  } else {
+    trainFilt = { ...trainList.arrived, ...trainList.departed, ...trainList.scheduled };
   }
-  
-  let trainList = [];
-  for (const trainId in trains.trainData) {
-    if (trainId.toLowerCase().includes(trainSearch.value.toLowerCase())) {
-      trainList.push(trainId);
+
+  Object.keys(trainFilt).forEach((trainId) => {
+    // check if train is in map view
+    if (trains.trainStatus === 'departed' && user.settings.showMap && user.settings.filterMap) {
+      if (!(trains.trainsInView.includes(trainId))) {
+        delete trainFilt[trainId];
+      }
     }
-  }
-  return trainList;
+
+    // check if train matches search criteria
+    if (trainSearch.value !== '' && !trainId.toLowerCase().includes(trainSearch.value.toLowerCase())) {
+      delete trainFilt[trainId];
+    }
+  });
+
+  return trainFilt;
 });
 
-const showTrainInList = (trainId: string) => {
-  if (trains.trainStatus === 'departed') {
-    return trains.filteredTrains.includes(trainId);
-  }
-  return true;
-};
+watch(() => trains.trainData, (newTrains) => {
+  Object.entries(newTrains).forEach(([trainId, train]) => {
+    if (train.departed) {
+      if (train.arrived) {
+        trainList.arrived[trainId] = train;
+      } else {
+        trainList.departed[trainId] = train;
+      }
+    } else {
+      trainList.scheduled[trainId] = train;
+    }
+  });
+}, { immediate: true });
 
 </script>
 <template>
@@ -57,8 +92,8 @@ const showTrainInList = (trainId: string) => {
       <input v-model="trainSearch" type="search" name="train-search" id="train-search" class="bg-neutral-700 dark:bg-neutral-400 p-1">
     </div>
     <ul class="flex flex-col gap-1 overflow-auto">
-      <template v-for="(train, trainId) in trains.trainList[trains.trainStatus]" :key="trainId">
-        <li v-if="showTrainInList(trainId)" @click="router.push(`/${trainId}`)" class="grid grid-cols-[1fr_5fr] sm:grid-cols-[2fr_5fr_5fr] gap-1 items-center bg-stone-200 dark:bg-stone-900 p-2 border rounded-lg border-neutral-400 hover:border-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-400 cursor-pointer">
+      <template v-for="(train, trainId) in filteredTrains" :key="trainId">
+        <li @click="router.push(`/${trainId}`)" class="grid grid-cols-[1fr_5fr] sm:grid-cols-[2fr_5fr_5fr] gap-1 items-center bg-stone-200 dark:bg-stone-900 p-2 border rounded-lg border-neutral-400 hover:border-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-400 cursor-pointer">
           <div class="row-span-2 sm:row-auto self-stretch flex flex-col justify-center text-4xl text-center border-r border-neutral-400 dark:border-neutral-700">
             <span>{{ trainId.toString().split(' ')[0] }} <span class="text-xl">{{ trainId.toString().split(' ')[1] ?? '' }}</span></span>
           </div>
@@ -76,12 +111,12 @@ const showTrainInList = (trainId: string) => {
           <div class="col-start-2 sm:col-auto">
             <div v-if="trains.trainStatus === 'departed'" class="grid grid-cols-[1fr_2fr] items-end text-center text-sm">
               <div class="text-neutral-700 dark:text-neutral-400 text-right">Next Stop:</div>
-              <div class="text-left sm:text-base ml-1">{{ train.times[train.next ?? 0].station }} <span class="text-neutral-400">in</span> {{ train.times[train.next ?? 0].eta }}</div>
+              <div class="text-left sm:text-base ml-1">{{ train.times[train.next ?? 0]?.station }} <span class="text-neutral-400">in</span> {{ train.times[train.next ?? 0]?.eta }}</div>
               <div class="text-neutral-700 dark:text-neutral-400 text-right">Status:</div>
-              <div class="text-left sm:text-base ml-1">{{ formatDelay(train.times[train.next ?? 0].diffMin) }}</div>
+              <div class="text-left sm:text-base ml-1">{{ formatDelay(train.times[train.next ?? 0]?.diffMin) }}</div>
             </div>
-            <div v-else-if="trains.trainStatus === 'active'" class="text-center">
-              <span>{{ trains.trainList['departed'] ? 'In Service' : trains.trainList['arrived'] ? 'Arrived' : 'Scheduled' }}</span>
+            <div v-else-if="trains.trainStatus === 'all'" class="text-center">
+              <span>{{ (trainId in trainList.departed) ? 'In Service' : (trainId in trainList.arrived) ? 'Arrived' : 'Scheduled' }}</span>
             </div>
           </div>
         </li>

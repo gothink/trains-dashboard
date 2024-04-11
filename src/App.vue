@@ -1,34 +1,33 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref, shallowRef, watch } from 'vue';
 import TrainMap from './components/TrainMap.vue';
 import { useTrainsStore } from './stores/trainsStore';
 import { RouterView, useRoute } from 'vue-router';
+import { useUserStore } from './stores/userStore';
 
 const trains = useTrainsStore();
 const route = useRoute();
+const user = useUserStore();
 
 const initialized = ref(false);
-const showMap = ref(true);
-const mapElem = ref<HTMLElement>();
+const mapElem = shallowRef<HTMLElement>();
 
 onMounted(async () => {
-  await trains.getTrainData();
+  await trains.initApp();
   initialized.value = true;
-  await trains.getStationData();
-  setInterval(trains.getTrainData, 40 * 1000);
 });
 </script>
 
 <template>
   <main v-if="initialized" class="flex flex-col lg:flex-row h-screen overflow-hidden">
-    <div class="w-full lg:h-screen flex flex-col" :class="showMap ? 'flex-none h-[50vh] lg:w-[50vw]' : 'h-fit lg:w-fit'">
-      <div class="flex-grow">
+    <div class="w-full lg:h-screen flex flex-col" :class="user.settings.showMap ? 'flex-none h-[50vh] lg:w-[50vw]' : 'h-fit lg:w-fit'">
+      <div v-if="user.settings.showMap" class="flex-grow">
         <div id="map-div" ref="mapElem" class="h-full"></div>
-        <TrainMap v-if="showMap && mapElem" map-element="map-div" />
+        <TrainMap v-if="mapElem" :map-element="mapElem" />
       </div>
       <div class="flex-none">
-        <button class="my-1 mx-auto px-2 rounded-sm bg-indigo-700 dark:bg-indigo-500" @click="showMap = !showMap">
-          {{ showMap ? '<< Hide' : '>> Show' }} Map
+        <button class="my-1 mx-auto px-2 rounded-sm bg-indigo-700 dark:bg-indigo-500" @click="user.settings.showMap = !user.settings.showMap">
+          {{ user.settings.showMap ? '<< Hide' : '>> Show' }} Map
         </button>
       </div>
     </div>

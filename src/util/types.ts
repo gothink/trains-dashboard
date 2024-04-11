@@ -35,4 +35,4 @@ export interface TrainInfo {
 export type MapCoord = [number, number];
 export type MapBoundary = [MapCoord, MapCoord];
 
-export type TrainStatus = 'arrived' | 'departed' | 'scheduled' | 'active';
+export type TrainStatus = 'arrived' | 'departed' | 'scheduled' | 'all';
