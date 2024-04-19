@@ -1,5 +1,6 @@
 import './assets/style.css';
-import 'leaflet/dist/leaflet.css';
+//import 'leaflet/dist/leaflet.css';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';

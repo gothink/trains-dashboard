@@ -28,18 +28,18 @@ export const useTrainsStore = defineStore('trains', () => {
     for (const trainId in trainsActive.value) {
       if (!bounds) {
         bounds = [
-          [trainsActive.value[trainId].lat, trainsActive.value[trainId].lng],
-          [trainsActive.value[trainId].lat, trainsActive.value[trainId].lng],
+          [trainsActive.value[trainId].lng, trainsActive.value[trainId].lat],
+          [trainsActive.value[trainId].lng, trainsActive.value[trainId].lat],
         ];
       } else {
         bounds = [
           [
-            Math.min(bounds[0][0], trainsActive.value[trainId].lat),
-            Math.min(bounds[0][1], trainsActive.value[trainId].lng),
+            Math.min(bounds[0][0], trainsActive.value[trainId].lng),
+            Math.min(bounds[0][1], trainsActive.value[trainId].lat),
           ],
           [
-            Math.max(bounds[1][0], trainsActive.value[trainId].lat),
-            Math.max(bounds[1][1], trainsActive.value[trainId].lng),
+            Math.max(bounds[1][0], trainsActive.value[trainId].lng),
+            Math.max(bounds[1][1], trainsActive.value[trainId].lat),
           ],
         ];
       }
