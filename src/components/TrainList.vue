@@ -62,6 +62,10 @@ const filteredTrains = computed(() => {
   return trainFilt;
 });
 
+const highlightTrain = (trainId?: string) => {
+  trains.trainHighlighted = trainId ?? null;
+};
+
 watch(() => trains.trainData, (newTrains) => {
   Object.entries(newTrains).forEach(([trainId, train]) => {
     if (train.departed) {
@@ -93,7 +97,7 @@ watch(() => trains.trainData, (newTrains) => {
     </div>
     <ul class="flex flex-col gap-1 overflow-auto">
       <template v-for="(train, trainId) in filteredTrains" :key="trainId">
-        <li @click="router.push(`/${trainId}`)" class="grid grid-cols-[1fr_5fr] sm:grid-cols-[2fr_5fr_5fr] gap-1 items-center bg-stone-200 dark:bg-stone-900 p-2 border rounded-lg border-neutral-400 hover:border-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-400 cursor-pointer">
+        <li @click="router.push(`/${trainId}`)" @mouseover="highlightTrain(trainId)" @mouseout="highlightTrain()" class="grid grid-cols-[1fr_5fr] sm:grid-cols-[2fr_5fr_5fr] gap-1 items-center bg-stone-200 dark:bg-stone-900 p-2 border rounded-lg cursor-pointer" :class="trains.trainHighlighted === trainId ? 'border-neutral-700 dark:border-neutral-400' : 'border-neutral-400 hover:border-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-400'">
           <div class="row-span-2 sm:row-auto self-stretch flex flex-col justify-center text-4xl text-center border-r border-neutral-400 dark:border-neutral-700">
             <span>{{ trainId.toString().split(' ')[0] }} <span class="text-xl">{{ trainId.toString().split(' ')[1] ?? '' }}</span></span>
           </div>

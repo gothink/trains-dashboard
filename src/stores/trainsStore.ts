@@ -2,6 +2,9 @@ import { defineStore } from "pinia";
 import { computed, ref, shallowRef } from "vue";
 import { useUserStore } from "./userStore";
 import type { MapBoundary, MapCoord, TrainInfo, TrainStatus } from "@/util/types";
+import routeCoords from '../../data/routes.json';
+import trainRoutes from '../../data/trains.json';
+import stationInfo from '../../data/stations.json';
 
 interface StationData {
   name: string;
@@ -18,6 +21,7 @@ export const useTrainsStore = defineStore('trains', () => {
   const trainsActive = shallowRef<ActiveTrainsObject>({});
   const trainsInView = ref<string[]>([]);
   const trainSelected = ref("");
+  const trainHighlighted = ref<string | null>(null);
   const trainStatus = ref<TrainStatus>("departed");
   const stationSelected = ref("");
   const stationData = shallowRef<Record<string, StationData>>({});
@@ -25,25 +29,49 @@ export const useTrainsStore = defineStore('trains', () => {
   
   const mapBounds = computed(() => {
     let bounds: MapBoundary | null = null;
-    for (const trainId in trainsActive.value) {
-      if (!bounds) {
-        bounds = [
-          [trainsActive.value[trainId].lng, trainsActive.value[trainId].lat],
-          [trainsActive.value[trainId].lng, trainsActive.value[trainId].lat],
-        ];
-      } else {
-        bounds = [
-          [
-            Math.min(bounds[0][0], trainsActive.value[trainId].lng),
-            Math.min(bounds[0][1], trainsActive.value[trainId].lat),
-          ],
-          [
-            Math.max(bounds[1][0], trainsActive.value[trainId].lng),
-            Math.max(bounds[1][1], trainsActive.value[trainId].lat),
-          ],
-        ];
+    if (trainSelected.value !== '') {
+      trainData.value[trainSelected.value].times.forEach((s) => {
+        let coords = stationInfo[s.code as keyof typeof stationInfo].coords;
+        if (!bounds) {
+          bounds = [
+            [ parseFloat(coords[0]), parseFloat(coords[1]) ],
+            [ parseFloat(coords[0]), parseFloat(coords[1]) ],
+          ];
+        } else {
+          bounds = [
+            [
+              Math.min(bounds[0][0], parseFloat(coords[0])),
+              Math.min(bounds[0][1], parseFloat(coords[1])),
+            ],
+            [
+              Math.max(bounds[1][0], parseFloat(coords[0])),
+              Math.max(bounds[1][1], parseFloat(coords[1])),
+            ],
+          ];
+        }
+      });
+    } else {
+      for (const trainId in trainsActive.value) {
+        if (!bounds) {
+          bounds = [
+            [trainsActive.value[trainId].lng, trainsActive.value[trainId].lat],
+            [trainsActive.value[trainId].lng, trainsActive.value[trainId].lat],
+          ];
+        } else {
+          bounds = [
+            [
+              Math.min(bounds[0][0], trainsActive.value[trainId].lng),
+              Math.min(bounds[0][1], trainsActive.value[trainId].lat),
+            ],
+            [
+              Math.max(bounds[1][0], trainsActive.value[trainId].lng),
+              Math.max(bounds[1][1], trainsActive.value[trainId].lat),
+            ],
+          ];
+        }
       }
     }
+    
     return bounds;
   });
 
@@ -116,6 +144,7 @@ export const useTrainsStore = defineStore('trains', () => {
     trainData,
     trainsActive,
     trainSelected,
+    trainHighlighted,
     trainsInView,
     trainStatus,
     stationData,
